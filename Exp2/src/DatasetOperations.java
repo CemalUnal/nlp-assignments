@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 public class DatasetOperations {
 
     private EditDistanceDetails edd;
-    private Map<String, EditDistanceDetails> editDetailsOfWrongWords = new HashMap<>();
+//    private Map<String, EditDistanceDetails> editDetailsOfWrongWords = new HashMap<>();
 
     private String typeOfOperation;
     private String correctLetters;
@@ -14,45 +14,44 @@ public class DatasetOperations {
     /**
      * Creates a sentence with sentence boundaries "<s>" and "</s>".
      *
-     * @param correctedDatasetSentences all tokens that are in the input file
+     * @param line all tokens that are in the input file
      * @return a complete sentence with boundaries
      */
-    public List<String> addSentenceBoundary(List<String> correctedDatasetSentences) {
+    public String addSentenceBoundary(String line) {
         String punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
         StringJoiner stringJoiner = new StringJoiner(" ");
-        List<String> sentences = new ArrayList<>();
 
-        for (String sentence : correctedDatasetSentences) {
+//        for (String sentence : correctedDatasetSentences) {
 
-            List<String> tokens = separateIntoTokens(sentence);
+        List<String> tokens = separateIntoTokens(line);
 
-            stringJoiner.add("<s>");
-            for (String token : tokens) {
-                // if the last char of the string is a punctuation mark,
-                // then simply delete it.
-                if (token.length() > 1 && punctuation.indexOf(token.charAt(token.length() - 1)) != -1) {
-                    token = token.substring(0, token.length() - 1);
-                }
-
-                // if the first char of the string is a punctuation mark,
-                // then simply delete it.
-                if (token.length() > 1 && punctuation.indexOf(token.charAt(0)) != -1) {
-                    token = token.substring(1);
-                }
-
-                // if the token is not a punctuation mark
-                if (punctuation.indexOf(token.charAt(token.length() - 1)) == -1) {
-                    stringJoiner.add(token);
-                }
+        stringJoiner.add("<s>");
+        for (String token : tokens) {
+            // if the last char of the string is a punctuation mark,
+            // then simply delete it.
+            if (token.length() > 1 && punctuation.indexOf(token.charAt(token.length() - 1)) != -1) {
+                token = token.substring(0, token.length() - 1);
             }
-            stringJoiner.add("</s>");
 
-            if (!stringJoiner.toString().equals("<s> </s>"))
-                sentences.add(stringJoiner.toString());
+            // if the first char of the string is a punctuation mark,
+            // then simply delete it.
+            if (token.length() > 1 && punctuation.indexOf(token.charAt(0)) != -1) {
+                token = token.substring(1);
+            }
 
-            stringJoiner = new StringJoiner(" ");
+            // if the token is not a punctuation mark
+            if (punctuation.indexOf(token.charAt(token.length() - 1)) == -1) {
+                stringJoiner.add(token);
+            }
         }
-        return sentences;
+        stringJoiner.add("</s>");
+
+//            if (!stringJoiner.toString().equals("<s> </s>"))
+//                sentences.add(stringJoiner.toString());
+
+//            stringJoiner = new StringJoiner(" ");
+//        }
+        return stringJoiner.toString();
     }
 
     private ArrayList<String> separateIntoTokens (String line) {
@@ -82,7 +81,8 @@ public class DatasetOperations {
                 minEditDistance = getMinEditDistance(datasetToken, word, tokenLength, wordLength);
 
                 if (minEditDistance == 1) {
-                    editDetailsOfWrongWords.put(word, edd);
+//                    editDetailsOfWrongWords.put(word, edd);
+//                    System.out.println(datasetToken + " - " + word);
 
                     if (typeOfOperation.equals("insertion")) {
                         hmm.addToInsertionInfoMap(correctLetters, wrongLetters);
@@ -91,14 +91,16 @@ public class DatasetOperations {
                     } else if (typeOfOperation.equals("substitution")) {
                         hmm.addToSubstitutionInfoMap(correctLetters, wrongLetters);
                     }
+
+                    return minEditDistance;
                 }
             }
         }
-
+//        System.out.println(minEditDistance);
         return minEditDistance;
     }
 
-    private int getMinEditDistance(String token, String word, int tokenLength, int wordLength) {
+    public int getMinEditDistance(String token, String word, int tokenLength, int wordLength) {
         // If the correctWord is empty, the cost is equal to
         // the length of wrongWord
         if (tokenLength == 0) {
@@ -107,12 +109,10 @@ public class DatasetOperations {
                 String currentLetter = String.valueOf(word.charAt(wordLength - 1));
                 String previousLetter = "#";
 
-//                String correctLetters = String.valueOf(previousLetter);
                 correctLetters = String.valueOf(previousLetter);
-//                String wrongLetters = String.valueOf(previousLetter) + String.valueOf(currentLetter);
                 wrongLetters = String.valueOf(previousLetter) + String.valueOf(currentLetter);
 
-                edd = new EditDistanceDetails(token, correctLetters,  wrongLetters, typeOfOperation, 0.0);
+//                edd = new EditDistanceDetails(token, correctLetters, word, wrongLetters);
 //                hmm.addToInsertionInfoMap(correctLetters, wrongLetters);
             }
             return wordLength;
@@ -126,12 +126,10 @@ public class DatasetOperations {
                 char currentLetter = token.charAt(tokenLength - 1);
                 char previousLetter = '-';
 
-//                String correctLetters = String.valueOf(previousLetter) + String.valueOf(currentLetter);
                 correctLetters = String.valueOf(previousLetter) + String.valueOf(currentLetter);
-//                String wrongLetters = String.valueOf(previousLetter);
                 wrongLetters = String.valueOf(previousLetter);
 
-                edd = new EditDistanceDetails(token, correctLetters, wrongLetters, typeOfOperation, 0.0);
+//                edd = new EditDistanceDetails(token, correctLetters, word, wrongLetters);
 //                hmm.addToDeletionInfoMap(correctLetters, wrongLetters);
             }
             return tokenLength;
@@ -152,7 +150,6 @@ public class DatasetOperations {
 
         // type is insertion
         if (insertionEditDistance <= deletionEditDistance && insertionEditDistance <= substitutionEditDistance) {
-//            String typeOfOperation = "insertion";
             typeOfOperation = "insertion";
             String currentLetter = String.valueOf(word.charAt(wordLength - 1));
             String previousLetter = "#";
@@ -161,19 +158,16 @@ public class DatasetOperations {
                 previousLetter = String.valueOf(word.charAt(wordLength - 2));
             }
 
-//            String correctLetters = String.valueOf(previousLetter);
             correctLetters = String.valueOf(previousLetter);
             wrongLetters = String.valueOf(previousLetter) + String.valueOf(currentLetter);
-//            String wrongLetters = String.valueOf(previousLetter) + String.valueOf(currentLetter);
 
-            edd = new EditDistanceDetails(token, correctLetters,  wrongLetters, typeOfOperation, 0.0);
+//            edd = new EditDistanceDetails(token, correctLetters, word, wrongLetters);
 //            hmm.addToInsertionInfoMap(correctLetters, wrongLetters);
 
             minEditDistance = insertionEditDistance;
         }
         // type is deletion
         else if (deletionEditDistance <= insertionEditDistance && deletionEditDistance <= substitutionEditDistance) {
-//            String typeOfOperation = "deletion";
             typeOfOperation = "deletion";
 
             char currentLetter = token.charAt(tokenLength - 1);
@@ -183,19 +177,16 @@ public class DatasetOperations {
                 previousLetter = word.charAt(wordLength - 1);
             }
 
-//            String correctLetters = String.valueOf(previousLetter) + String.valueOf(currentLetter);
             correctLetters = String.valueOf(previousLetter) + String.valueOf(currentLetter);
-//            String wrongLetters = String.valueOf(previousLetter);
             wrongLetters = String.valueOf(previousLetter);
 
-            edd = new EditDistanceDetails(token, correctLetters, wrongLetters, typeOfOperation, 0.0);
+//            edd = new EditDistanceDetails(token, correctLetters, word, wrongLetters);
 //            hmm.addToDeletionInfoMap(correctLetters, wrongLetters);
 
             minEditDistance = deletionEditDistance;
         }
         // type is substitution
         else {
-//            String typeOfOperation = "substitution";
             typeOfOperation = "substitution";
             char currentLetter = token.charAt(tokenLength - 1);
             char previousLetter = word.charAt(wordLength - 1);
@@ -203,7 +194,7 @@ public class DatasetOperations {
             correctLetters = String.valueOf(currentLetter);
             wrongLetters = String.valueOf(previousLetter);
 
-            edd = new EditDistanceDetails(token, String.valueOf(currentLetter),  String.valueOf(previousLetter), typeOfOperation, 0.0);
+//            edd = new EditDistanceDetails(token, String.valueOf(currentLetter), word, String.valueOf(previousLetter));
 //            hmm.addToSubstitutionInfoMap(String.valueOf(currentLetter), String.valueOf(previousLetter));
 
             minEditDistance = substitutionEditDistance;
@@ -212,69 +203,11 @@ public class DatasetOperations {
         return 1 + minEditDistance;
     }
 
-//    private int getMinEditDistanceIterative(String word, String token) {
-//        int wordLength = word.length();
-//        int tokenLength = token.length();
-//
-//        int[][] table = new int[wordLength + 1][tokenLength + 1];
-//
-//        int insertionEditDistance;
-//        int deletionEditDistance;
-//        int substitutionEditDistance;
-//        int minEditDistance;
-//
-//        for (int i = 0; i <= wordLength; i++) {
-//            for (int j = 0; j <= tokenLength; j++) {
-//                // If first string is empty, only option is to
-//                // insert all characters of second string
-//                if (i == 0) {
-//                    table[i][j] = j; // Min. operations = j
-//                }
-//                // If second string is empty, only option is to
-//                // remove all characters of second string
-//                else if (j == 0) {
-//                    table[i][j] = i; // Min. operations = i
-//                }
-//
-//                // If last characters are same, ignore last char
-//                // and recur for remaining string
-//                else if (word.charAt(i - 1) == token.charAt(j - 1)) {
-//                    table[i][j] = table[i - 1][j - 1];
-//                }
-//
-//                else {
-//                    insertionEditDistance = table[i][j - 1];
-//                    deletionEditDistance = table[i - 1][j];
-//                    substitutionEditDistance = table[i - 1][j - 1];
-//
-//                    // type is insertion
-//                    if (insertionEditDistance <= deletionEditDistance && insertionEditDistance <= substitutionEditDistance) {
-//                        minEditDistance = insertionEditDistance;
-//                    }
-//                    // type is deletion
-//                    else if (deletionEditDistance <= insertionEditDistance && deletionEditDistance <= substitutionEditDistance) {
-//                        minEditDistance = deletionEditDistance;
-//                    }
-//                    // type is substitution
-//                    else {
-//                        minEditDistance = substitutionEditDistance;
-//                    }
-//
-//                    table[i][j] = minEditDistance;
-//                }
-//                // If last character are different, consider all
-//                // possibilities and find minimum
-////                else {
-////                    table[i][j] = 1 + min(table[i][j - 1],  // Insert
-////                            table[i - 1][j],  // Remove
-////                            table[i - 1][j - 1]); // Replace
-////                }
-//            }
-//        }
-//        return table[wordLength][tokenLength];
-//    }
+    public String getCorrectLetters() {
+        return correctLetters;
+    }
 
-    public Map<String, EditDistanceDetails> getEditDetailsOfWrongWords() {
-        return editDetailsOfWrongWords;
+    public String getWrongLetters() {
+        return wrongLetters;
     }
 }

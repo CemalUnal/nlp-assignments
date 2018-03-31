@@ -1,61 +1,31 @@
 public class EditDistanceDetails {
 
-    private String correctionWord;
+    private String correctWord;
+    private String wrongWord;
     private String correctLetters;
     private String wrongLetters;
 //    private char currentLetter;
 //    private char previousLetter;
-    private String typeOfOperation;
-    private double emissionProbability;
+//    private String typeOfOperation;
+//    private double emissionProbability;
 
-    public EditDistanceDetails(String correctionWord, String correctLetters, String wrongLetters, String typeOfOperation, double emissionProbability) {
-        this.correctionWord = correctionWord;
+    public EditDistanceDetails(String correctWord, String correctLetters, String wrongWord, String wrongLetters) {
+        this.correctWord = correctWord;
         this.correctLetters = correctLetters;
+        this.wrongWord = wrongWord;
         this.wrongLetters = wrongLetters;
-        this.typeOfOperation = typeOfOperation;
-        this.emissionProbability = emissionProbability;
+//        this.typeOfOperation = typeOfOperation;
+//        this.emissionProbability = emissionProbability;
     }
 
     public EditDistanceDetails() {}
 
-    public String getCorrectionWord() {
-        return correctionWord;
+    public String getCorrectWord() {
+        return correctWord;
     }
 
-    public void setCorrectionWord(String correctionWord) {
-        this.correctionWord = correctionWord;
-    }
-
-//    public char getCurrentLetter() {
-//        return currentLetter;
-//    }
-//
-//    public void setCurrentLetter(char currentLetter) {
-//        this.currentLetter = currentLetter;
-//    }
-//
-//    public char getPreviousLetter() {
-//        return previousLetter;
-//    }
-//
-//    public void setPreviousLetter(char previousLetter) {
-//        this.previousLetter = previousLetter;
-//    }
-
-    public String getTypeOfOperation() {
-        return typeOfOperation;
-    }
-
-    public void setTypeOfOperation(String typeOfOperation) {
-        this.typeOfOperation = typeOfOperation;
-    }
-
-    public double getEmissionProbability() {
-        return emissionProbability;
-    }
-
-    public void setEmissionProbability(double emissionProbability) {
-        this.emissionProbability = emissionProbability;
+    public void setCorrectWord(String correctWord) {
+        this.correctWord = correctWord;
     }
 
     public String getCorrectLetters() {
@@ -64,6 +34,14 @@ public class EditDistanceDetails {
 
     public void setCorrectLetters(String correctLetters) {
         this.correctLetters = correctLetters;
+    }
+
+    public String getWrongWord() {
+        return wrongWord;
+    }
+
+    public void setWrongWord(String wrongWord) {
+        this.wrongWord = wrongWord;
     }
 
     public String getWrongLetters() {

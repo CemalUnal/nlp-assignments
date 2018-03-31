@@ -1,3 +1,4 @@
+import javax.xml.crypto.Data;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -7,10 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,11 +17,15 @@ public class FReader {
     private String regex = "(<err targ=)([a-zA-Z!\"#$%&'()*+,-.:;?@\\[\\]^_`{|}~\\s]+)(>)(\\s)([a-zA-Z!\"#$%&'()*+,-.:;?@\\[\\]^_`{|}~\\s]+)(\\s)(</err>)";
 
     private List<String> rawDatasetLines = new ArrayList<>();
-    private List<String> errTags = new ArrayList<>();
+    private static List<String> errTags = new ArrayList<>();
+//    private static List<String> wrongLines = new ArrayList<>();
+    private static Map<String, List<String>> sentencesWithWrongWords = new HashMap<>();
+//    private static List<String> wrongWords = new ArrayList<>();
+    private static List<String> wrongLines = new ArrayList<>();
 
     // since there can be more than one correct word for one wrong word,
     // we need a list of these correct words.
-    private Map<String, List<String>> wrongAndCorrectWordForms = new HashMap<>();
+    private static Map<String, List<String>> wrongAndCorrectWordForms = new HashMap<>();
 
     public List<String> getCorrectedDatasetLines(String filePath) throws IOException {
         Path file = Paths.get(filePath);
@@ -33,7 +35,10 @@ public class FReader {
 
         BufferedReader reader = new BufferedReader(new FileReader(filePath));
         String line;
+//        String wrongLine;
         List<String> correctedDatasetLines = new ArrayList<>();
+        DatasetOperations datasetOperations = new DatasetOperations();
+        HiddenMarkovModel hmm = new HiddenMarkovModel();
 
         while ((line = reader.readLine()) != null) {
             if (!line.equals("")) {
@@ -42,11 +47,25 @@ public class FReader {
 
                 extractErrorTagFromLine(line);
 
-                line = getCorrectedLine(line);
-                correctedDatasetLines.add(line);
+                wrongLines.add(line);
 
+                line = getCorrectedLine(line);
+
+                // line'a sentence boundary ekle
+                line = datasetOperations.addSentenceBoundary(line);
+//                wrongLine = datasetOperations.addSentenceBoundary(wrongLine);
+                // unigram map'e ekle
+                hmm.addToUnigramMap(line);
+
+                correctedDatasetLines.add(line);
+//                wrongLines.add(wrongLine);
+//                sentencesWithWrongWords.put(wrongLine, new ArrayList<>(wrongWords));
+//                wrongWords.clear();
             }
         }
+
+        // bigram map'e ekle
+        hmm.createBigramModel(correctedDatasetLines);
 
         return correctedDatasetLines;
     }
@@ -59,7 +78,7 @@ public class FReader {
 //            System.out.println(line);
             correctAndWrongWordTag = extractErrorTagFromLine(line);
 
-            addWrongAndCorrectWordForms(correctAndWrongWordTag, line);
+            addWrongAndCorrectWordForms(correctAndWrongWordTag);
         }
     }
 
@@ -76,7 +95,7 @@ public class FReader {
         return stringBuilder.toString();
     }
 
-    private void addWrongAndCorrectWordForms(String correctAndWrongWordTag, String line) {
+    private void addWrongAndCorrectWordForms(String correctAndWrongWordTag) {
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(correctAndWrongWordTag);
 
@@ -88,8 +107,31 @@ public class FReader {
             wrongWord = matcher.group(5);
 
 //            addToMap(correctAndWrongWordForms, correctWord, wrongWord);
+//            System.out.println(wrongWord + " - " + correctWord);
             addToMap(wrongAndCorrectWordForms, wrongWord, correctWord);
         }
+    }
+
+    private String getCorrectedLine(String line) {
+        for (String errTag : errTags) {
+            int beginIndex = line.indexOf(errTag);
+            int lastIndex = errTag.length();
+
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(errTag);
+
+            String correctWord;
+
+            while (matcher.find()) {
+                correctWord = matcher.group(2);
+
+                lastIndex = lastIndex + beginIndex;
+                line = line.substring(0, beginIndex) + correctWord + line.substring(lastIndex, line.length());
+            }
+        }
+        errTags.clear();
+
+        return line;
     }
 
     private void addToMap(Map<String, List<String>> map, String key, String value) {
@@ -101,6 +143,7 @@ public class FReader {
         int minEditDistance = datasetOperations.calculateMinEditDistance(key, hmm.getUnigramCountsMap());
 //        System.out.println(minEditDistance);
         if (minEditDistance == 1) {
+//            System.out.println(key + " - " + value);
             // if the map contains the correct word, then update its wrong words
             if (map.containsKey(key)) {
                 // And we do not want to add the same
@@ -162,27 +205,6 @@ public class FReader {
 //
 //        return correctedDatasetLines;
 //    }
-    private String getCorrectedLine(String line) {
-        for (String errTag : errTags) {
-            int beginIndex = line.indexOf(errTag);
-            int lastIndex = errTag.length();
-
-            Pattern pattern = Pattern.compile(regex);
-            Matcher matcher = pattern.matcher(errTag);
-
-            String correctWord;
-
-            while (matcher.find()) {
-                correctWord = matcher.group(2);
-
-                lastIndex = lastIndex + beginIndex;
-                line = line.substring(0, beginIndex) + correctWord + line.substring(lastIndex, line.length());
-            }
-        }
-        errTags.clear();
-
-        return line;
-    }
 
 //    public Map<String, List<String>> getCorrectAndWrongWordForms() {
 //        return correctAndWrongWordForms;
@@ -192,7 +214,27 @@ public class FReader {
         return wrongAndCorrectWordForms;
     }
 
-//    public static List<String> getAllLines() {
+    public List<String> getRawDatasetLines() {
+        return rawDatasetLines;
+    }
+
+    public List<String> getWrongLines() {
+        return wrongLines;
+    }
+
+    public List<String> getErrTags() {
+        return errTags;
+    }
+
+    public String getRegex() {
+        return regex;
+    }
+
+    public Map<String, List<String>> getSentencesWithWrongWords() {
+        return sentencesWithWrongWords;
+    }
+
+    //    public static List<String> getAllLines() {
 //        return allLines;
 //    }
 

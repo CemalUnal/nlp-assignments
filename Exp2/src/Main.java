@@ -16,67 +16,74 @@ public class Main {
 
         FReader fileReader = new FReader();
         FWriter fileWriter = new FWriter();
+        Viterbi viterbi = new Viterbi();
+
         DatasetOperations datasetOperations = new DatasetOperations();
         HiddenMarkovModel hmm = new HiddenMarkovModel();
 
         try {
-            List<String> correctedDatasetLines = fileReader.getCorrectedDatasetLines(inputFile);
-            List<String> sentences = datasetOperations.addSentenceBoundary(correctedDatasetLines);
+//            List<String> correctedDatasetLines = fileReader.getCorrectedDatasetLines(inputFile);
+            fileReader.getCorrectedDatasetLines(inputFile);
 
-            hmm.createUnigramModel(sentences);
-            hmm.createBigramModel(sentences);
-
+//            System.out.println(fileReader.getWrongLines());
             fileReader.initializeWrongCorrectWordsMap();
-//            for (String sentence : sentences) {
-//                System.out.println(sentence);
-//            }
+            viterbi.implementViterbi();
 
-//            Map<String, List<String>> wrongAndCorrectWordForms = fileReader.getWrongAndCorrectWordForms();
 //
-//            System.out.println("wrongAndCorrectWordForms size: " + wrongAndCorrectWordForms.size());
-//            System.out.println("unigram map size: " + hmm.getUnigramCountsMap().size());
-//            for (String key : wrongAndCorrectWordForms.keySet()) {
-//                datasetOperations.calculateMinEditDistance(key, hmm.getUnigramCountsMap());
+////            for (String sentence : sentences) {
+////                System.out.println(sentence);
+////            }
+//
+////            Map<String, List<String>> wrongAndCorrectWordForms = fileReader.getWrongAndCorrectWordForms();
+////
+////            System.out.println("wrongAndCorrectWordForms size: " + wrongAndCorrectWordForms.size());
+////            System.out.println("unigram map size: " + hmm.getUnigramCountsMap().size());
+////            for (String key : wrongAndCorrectWordForms.keySet()) {
+////                datasetOperations.calculateMinEditDistance(key, hmm.getUnigramCountsMap());
+////            }
+////
+//            Map<List<String>, Double> cemal1 = hmm.getInsertionInfoMap();
+//            Map<List<String>, Double> cemal2 = hmm.getDeletionInfoMap();
+//            Map<List<String>, Double> cemal3 = hmm.getSubstitutionInfoMap();
+//
+//            for (Map.Entry<List<String>, Double> cemal : cemal1.entrySet()) {
+//                System.out.println(cemal.getKey() + " - " + cemal.getValue());
 //            }
 //
-            Map<List<String>, Double> cemal1 = hmm.getInsertionInfoMap();
-            Map<List<String>, Double> cemal2 = hmm.getDeletionInfoMap();
-            Map<List<String>, Double> cemal3 = hmm.getSubstitutionInfoMap();
-
-            for (Map.Entry<List<String>, Double> cemal : cemal1.entrySet()) {
-                System.out.println(cemal.getKey() + " - " + cemal.getValue());
-            }
-//////////////////////
+//            System.out.println("---------------------------------------------------------------------------");
+//
 //            for (Map.Entry<List<String>, Double> cemal : cemal2.entrySet()) {
 //                System.out.println(cemal.getKey() + " - " + cemal.getValue());
 //            }
 //
+//            System.out.println("---------------------------------------------------------------------------");
+//
 //            for (Map.Entry<List<String>, Double> cemal : cemal3.entrySet()) {
 //                System.out.println(cemal.getKey() + " - " + cemal.getValue());
 //            }
+//
+////            Map<String, EditDistanceDetails> editDetails = datasetOperations.getEditDetailsOfWrongWords();
+//
+////            for (String key : editDetails.keySet()) {
+////                if (editDetails.get(key).getTypeOfOperation().equals("insertion")) {
+////                    System.out.println("WrongWord: " + key);
+////                    System.out.println(editDetails.get(key).getTypeOfOperation());
+////                    System.out.println("CorrectionWord: " + editDetails.get(key).getCorrectionWord());
+////                    System.out.println("CorrectLetters: " + editDetails.get(key).getCorrectLetters());
+////                    System.out.println("WrongLetters: " + editDetails.get(key).getWrongLetters());
+////                    System.out.println("---------------------------------------------------------------------------");
+////                }
+////            }
+//
+////            datasetOperations.deneme();
+////            for (Map.Entry<String, List<String>> wrongWord : wrongAndCorrectWordForms.entrySet()) {
+////                int minEditDistance = getMinEditDistance(correctWord, wrongWord.getKey());
+////                if (minEditDistance == 1 && edd != null) {
+////                    editDetailsOfWrongWords.put(wrongWord.getKey(), edd);
+////                }
+////            }
 
-            Map<String, EditDistanceDetails> editDetails = datasetOperations.getEditDetailsOfWrongWords();
-
-            for (String key : editDetails.keySet()) {
-                if (editDetails.get(key).getTypeOfOperation().equals("insertion")) {
-                    System.out.println("WrongWord: " + key);
-                    System.out.println(editDetails.get(key).getTypeOfOperation());
-                    System.out.println("CorrectionWord: " + editDetails.get(key).getCorrectionWord());
-                    System.out.println("CorrectLetters: " + editDetails.get(key).getCorrectLetters());
-                    System.out.println("WrongLetters: " + editDetails.get(key).getWrongLetters());
-                    System.out.println("---------------------------------------------------------------------------");
-                }
-            }
-
-//            datasetOperations.deneme();
-//            for (Map.Entry<String, List<String>> wrongWord : wrongAndCorrectWordForms.entrySet()) {
-//                int minEditDistance = getMinEditDistance(correctWord, wrongWord.getKey());
-//                if (minEditDistance == 1 && edd != null) {
-//                    editDetailsOfWrongWords.put(wrongWord.getKey(), edd);
-//                }
-//            }
-
-            System.out.println("Execution is done. Estimated execution time is: " + (double) (System.nanoTime() - startTime) / 1000000000.0 + " seconds.%n");
+            System.out.println("Execution is done. Estimated execution time is: " + (double) (System.nanoTime() - startTime) / 1000000000.0 + " seconds.");
         } catch (Exception e) {
             e.printStackTrace();
         }

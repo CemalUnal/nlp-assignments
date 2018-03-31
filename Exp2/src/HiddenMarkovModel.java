@@ -36,16 +36,16 @@ public class HiddenMarkovModel {
      * Adds all unigrams in the training set to a hashmap by calling
      * the addWordToMap method of its parent class.
      *
-     * @param trainingSet training set
+     * @param line training set
      */
-    public void createUnigramModel(List<String> trainingSet) {
-        for (String sentence : trainingSet) {
-            String[] words = sentence.split("\\s+");
+    public void addToUnigramMap(String line) {
+//        for (String sentence : trainingSet) {
+            String[] words = line.split("\\s+");
             for (String word : words) {
                 addWordToMap(unigramCountsMap, word);
                 totalCount++;
             }
-        }
+//        }
     }
 
     /**
@@ -120,44 +120,35 @@ public class HiddenMarkovModel {
         double numerator = 0.0;
         double denominator;
 
-//        for (Map.Entry<String, EditDistanceDetails> entry: editDetailsOfWrongWords.entrySet()) {
-//            String tempCorrectLetters = entry.getValue().getCorrectLetters();
-//            String tempWrongLetters = entry.getValue().getWrongLetters();
-//            if (tempCorrectLetters.equals(correctLetters) && tempWrongLetters.equals(wrongLetters)) {
-//                numerator = numerator + 1.0;
-//            }
-//        }
+        List<String> temp = Arrays.asList(correctLetters, wrongLetters);
 
-//        denominator = getWordCount("c");
+        if (insertionInfoMap.containsKey(temp)) {
+            numerator = insertionInfoMap.get(temp);
+        }
 
-//        System.out.println(denominator);
-//        String bigramToken = previousWord + " " + currentWord;
+        else if (deletionInfoMap.containsKey(temp)) {
+            numerator = deletionInfoMap.get(temp);
+        }
 
-        return numerator;
+        else if (substitutionInfoMap.containsKey(temp)) {
+            numerator = substitutionInfoMap.get(temp);
+        }
+
+        denominator = getWordCount(correctLetters);
+
+        return numerator / denominator;
     }
 
-//    private double getWordCount(String word) {
-//        double count = 0.0;
-//        List<String> allLines = FReader.getAllLines();
-//
-////        Pattern pattern = Pattern.compile("cr");
-//        for (String line : allLines) {
-//            count = count + line.split(Pattern.quote(word), -1).length - 1;
-//        }
-//
-//        return count;
-//    }
+    private double getWordCount(String word) {
+        double count = 0.0;
 
-//    private static double getTransitionProbability(String type, String wrongWord, String correctionWord) {
-//        StringBuilder stringBuilder = new StringBuilder();
-//        stringBuilder.append(correctionWord.charAt(deleteIndex - 1));
-//        stringBuilder.append(correctionWord.charAt(deleteIndex));
-//
-//        String correctWordPart = stringBuilder.toString();
-//        char missingWordPart = correctionWord.charAt(deleteIndex);
-////        correctWordPart kac kere missingWordPart'a donusmus
-////        correctWordPart'in count'unu bul
-//    }
+        for (Map.Entry<String, Double> entry: unigramCountsMap.entrySet()) {
+            double tempCount = entry.getKey().split(Pattern.quote(word), -1).length - 1;
+            tempCount = tempCount * entry.getValue();
+            count = count + tempCount;
+        }
+        return count;
+    }
 
     public Map<List<String>, Double> getInsertionInfoMap() {
         return insertionInfoMap;

@@ -40,11 +40,11 @@ public class HiddenMarkovModel {
      */
     public void addToUnigramMap(String line) {
 //        for (String sentence : trainingSet) {
-            String[] words = line.split("\\s+");
-            for (String word : words) {
-                addWordToMap(unigramCountsMap, word);
-                totalCount++;
-            }
+        String[] words = line.split("\\s+");
+        for (String word : words) {
+            addWordToMap(unigramCountsMap, word);
+            totalCount++;
+        }
 //        }
     }
 

@@ -122,11 +122,11 @@ public class Viterbi {
     private static double[][] emission_probability = { { 0.01, 0.02, 0.02 }, { 0.8, 0.01, 0.5 }, { 0.19, 0.97, 0.48 } };
 
     private static class TNode {
-//        private List<Integer> viterbiPath;
+        //        private List<Integer> viterbiPath;
         private String wordWithMaxProb;
         private double viterbiProbability;
 
-//        public TNode( List<Integer> viterbiPath, String wordWithMaxProb, double viterbiProbability) {
+        //        public TNode( List<Integer> viterbiPath, String wordWithMaxProb, double viterbiProbability) {
         public TNode(String wordWithMaxProb, double viterbiProbability) {
 //            this.viterbiPath = new ArrayList<>(viterbiPath);
             this.wordWithMaxProb = wordWithMaxProb;

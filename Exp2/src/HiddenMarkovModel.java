@@ -36,7 +36,7 @@ public class HiddenMarkovModel {
      * Adds all unigrams in the training set to a hashmap by calling
      * the addWordToMap method of its parent class.
      *
-     * @param line training set
+     * @param line line
      */
     public void addToUnigramMap(String line) {
 //        for (String sentence : trainingSet) {
@@ -53,16 +53,16 @@ public class HiddenMarkovModel {
      * Adds all bigrams in the training set to a hashmap by calling
      * the addWordToMap method of its parent class.
      *
-     * @param trainingSet training set
+     * @param line line
      */
-    public void createBigramModel(List<String> trainingSet) {
-        for (String sentence : trainingSet) {
-            String[] words = sentence.split("\\s+");
+    public void addToBigramMap(String line) {
+//        for (String sentence : trainingSet) {
+            String[] words = line.split("\\s+");
             for (int i = 1; i < words.length; i++) {
                 String bigramToken = words[i - 1] + " " + words[i];
                 addWordToMap(bigramCountsMap, bigramToken);
             }
-        }
+//        }
     }
 
     private void addToInfoMap(Map<List<String>, Double> map, String correctLetters, String wrongLetters) {
@@ -103,12 +103,12 @@ public class HiddenMarkovModel {
         return probability;
     }
 
-    public double getInitialProbability(String word) {
-        String unigramToken = "<s>";
-        String bigramToken = unigramToken + " " + word;
-
-        return calculateProbability(unigramToken, bigramToken);
-    }
+//    public double getInitialProbability(String word) {
+//        String unigramToken = "<s>";
+//        String bigramToken = unigramToken + " " + word;
+//
+//        return calculateProbability(unigramToken, bigramToken);
+//    }
 
     public double getTransitionProbability(String previousWord, String currentWord) {
         String bigramToken = previousWord + " " + currentWord;

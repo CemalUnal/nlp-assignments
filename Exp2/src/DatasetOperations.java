@@ -4,18 +4,17 @@ import java.util.regex.Pattern;
 
 public class DatasetOperations {
 
-    private EditDistanceDetails edd;
-//    private Map<String, EditDistanceDetails> editDetailsOfWrongWords = new HashMap<>();
-
-    private String typeOfOperation;
-    private String correctLetters;
-    private String wrongLetters;
+    private static String typeOfOperation;
+    private static String correctLetters;
+    private static String wrongLetters;
 
     /**
-     * Creates a sentence with sentence boundaries "<s>" and "</s>".
+     * Removes punctuation marks from the beginning and
+     * end of all strings in a line (call these strings plain word)
+     * Also adds sentence boundaries
      *
-     * @param line all tokens that are in the input file
-     * @return a complete sentence with boundaries
+     * @param line a line in the dataset
+     * @return a line with plain words
      */
     public String addSentenceBoundary(String line) {
         String punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
@@ -68,22 +67,20 @@ public class DatasetOperations {
         return allTokens;
     }
 
-    public int calculateMinEditDistance(String word, Map<String, Double> unigramCountsMap) {
+    public boolean calculateMinEditDistance(String word, Map<String, Double> unigramCountsMap) {
         HiddenMarkovModel hmm = new HiddenMarkovModel();
-        int minEditDistance = 0;
+        double minEditDistance;
+        boolean minEditDistanceIsOne = false;
 
         for (Map.Entry<String, Double> entry : unigramCountsMap.entrySet()) {
             String datasetToken = entry.getKey();
             int tokenLength = datasetToken.length();
             int wordLength = word.length();
 
-            if (Math.abs(tokenLength - wordLength) == 1 || Math.abs(tokenLength - wordLength) == 0) {
+            if (Math.abs(tokenLength - wordLength) == 1 || tokenLength - wordLength == 0) {
                 minEditDistance = getMinEditDistance(datasetToken, word, tokenLength, wordLength);
 
                 if (minEditDistance == 1) {
-//                    editDetailsOfWrongWords.put(word, edd);
-//                    System.out.println(datasetToken + " - " + word);
-
                     if (typeOfOperation.equals("insertion")) {
                         hmm.addToInsertionInfoMap(correctLetters, wrongLetters);
                     } else if (typeOfOperation.equals("deletion")) {
@@ -91,13 +88,13 @@ public class DatasetOperations {
                     } else if (typeOfOperation.equals("substitution")) {
                         hmm.addToSubstitutionInfoMap(correctLetters, wrongLetters);
                     }
-
-                    return minEditDistance;
+                    minEditDistanceIsOne = true;
+//                    return minEditDistance;
                 }
             }
         }
-//        System.out.println(minEditDistance);
-        return minEditDistance;
+
+        return minEditDistanceIsOne;
     }
 
     public int getMinEditDistance(String token, String word, int tokenLength, int wordLength) {
@@ -111,9 +108,6 @@ public class DatasetOperations {
 
                 correctLetters = String.valueOf(previousLetter);
                 wrongLetters = String.valueOf(previousLetter) + String.valueOf(currentLetter);
-
-//                edd = new EditDistanceDetails(token, correctLetters, word, wrongLetters);
-//                hmm.addToInsertionInfoMap(correctLetters, wrongLetters);
             }
             return wordLength;
         }
@@ -128,9 +122,6 @@ public class DatasetOperations {
 
                 correctLetters = String.valueOf(previousLetter) + String.valueOf(currentLetter);
                 wrongLetters = String.valueOf(previousLetter);
-
-//                edd = new EditDistanceDetails(token, correctLetters, word, wrongLetters);
-//                hmm.addToDeletionInfoMap(correctLetters, wrongLetters);
             }
             return tokenLength;
         }
@@ -161,9 +152,6 @@ public class DatasetOperations {
             correctLetters = String.valueOf(previousLetter);
             wrongLetters = String.valueOf(previousLetter) + String.valueOf(currentLetter);
 
-//            edd = new EditDistanceDetails(token, correctLetters, word, wrongLetters);
-//            hmm.addToInsertionInfoMap(correctLetters, wrongLetters);
-
             minEditDistance = insertionEditDistance;
         }
         // type is deletion
@@ -180,9 +168,6 @@ public class DatasetOperations {
             correctLetters = String.valueOf(previousLetter) + String.valueOf(currentLetter);
             wrongLetters = String.valueOf(previousLetter);
 
-//            edd = new EditDistanceDetails(token, correctLetters, word, wrongLetters);
-//            hmm.addToDeletionInfoMap(correctLetters, wrongLetters);
-
             minEditDistance = deletionEditDistance;
         }
         // type is substitution
@@ -193,9 +178,6 @@ public class DatasetOperations {
 
             correctLetters = String.valueOf(currentLetter);
             wrongLetters = String.valueOf(previousLetter);
-
-//            edd = new EditDistanceDetails(token, String.valueOf(currentLetter), word, String.valueOf(previousLetter));
-//            hmm.addToSubstitutionInfoMap(String.valueOf(currentLetter), String.valueOf(previousLetter));
 
             minEditDistance = substitutionEditDistance;
         }

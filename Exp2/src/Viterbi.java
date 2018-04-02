@@ -1,10 +1,11 @@
+import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Viterbi {
 
-    private static List<String> wrongWords = new ArrayList<>();
+    private static Map<String, String> wrongWordsWithCorrectVersion = new HashMap<>();
 
     private List<String> extractErrorTagFromLine(String line, String regex) {
         List<String> errorTags = new ArrayList<>();
@@ -45,7 +46,7 @@ public class Viterbi {
         return word;
     }
 
-    private List<String> getViterbiWords(String line, String regex) {
+    private List<String> getWrongViterbiWords(String line, String regex) {
         List<Integer> beginIndexList = new ArrayList<>();
         List<Integer> endIndexList = new ArrayList<>();
         List<String> words = new ArrayList<>();
@@ -58,7 +59,9 @@ public class Viterbi {
             String[] tempWords = line.split("\\s+");
             for (String tempWord : tempWords) {
                 tempWord = getPlainWord(tempWord);
-                words.add(tempWord);
+
+                if (!tempWord.equals("") && !tempWord.equals(" "))
+                    words.add(tempWord);
             }
 
             return words;
@@ -93,14 +96,21 @@ public class Viterbi {
             Matcher matcher = pattern.matcher(line.substring(beginIndexList.get(i), endIndexList.get(i) + 1));
 
             String wrongWord = null;
+            String correctWord = null;
 
             while (matcher.find()) {
+                correctWord = matcher.group(2);
                 wrongWord = matcher.group(5);
             }
 
             wrongWord = getPlainWord(wrongWord);
-            words.add(wrongWord);
-            wrongWords.add(wrongWord);
+            correctWord = getPlainWord(correctWord);
+
+            if (!wrongWord.equals("") && !wrongWord.equals(" ")) {
+                words.add(wrongWord);
+                wrongWordsWithCorrectVersion.put(wrongWord, correctWord);
+            }
+
             temp = endIndexList.get(i) + 1;
         }
 
@@ -108,48 +118,80 @@ public class Viterbi {
         if (endIndexList.size() != 0 && line.length() - 1 > endIndexList.get(endIndexList.size() - 1)) {
             String lastWordOfTheLine = line.substring(endIndexList.get(endIndexList.size() - 1) + 2, line.length());
             lastWordOfTheLine = getPlainWord(lastWordOfTheLine);
-            words.add(lastWordOfTheLine);
+            if (!lastWordOfTheLine.equals("") && !lastWordOfTheLine.equals(" "))
+                words.add(lastWordOfTheLine);
         }
 
         return words;
     }
 
-    private static List<String> states = Arrays.asList("#", "NN", "VB");
-    private static List<String> observations = Arrays.asList("I", "go", "some times");
-    private static List<String> words = new ArrayList<>();
-    private static List<Double> startProbabilities = Arrays.asList( 0.3, 0.4, 0.3 );
-    private static double[][] transition_probability = { { 0.2, 0.2, 0.6 }, { 0.4, 0.1, 0.5 }, { 0.1, 0.8, 0.1 } };
-    private static double[][] emission_probability = { { 0.01, 0.02, 0.02 }, { 0.8, 0.01, 0.5 }, { 0.19, 0.97, 0.48 } };
+//    private static List<String> states = Arrays.asList("#", "NN", "VB");
+//    private static List<String> observations = Arrays.asList("I", "go", "some times");
+//    private static List<String> words = new ArrayList<>();
+//    private static List<Double> startProbabilities = Arrays.asList( 0.3, 0.4, 0.3 );
+//    private static double[][] transition_probability = { { 0.2, 0.2, 0.6 }, { 0.4, 0.1, 0.5 }, { 0.1, 0.8, 0.1 } };
+//    private static double[][] emission_probability = { { 0.01, 0.02, 0.02 }, { 0.8, 0.01, 0.5 }, { 0.19, 0.97, 0.48 } };
 
-    private static class TNode {
+    private static class ViterbiNode {
         //        private List<Integer> viterbiPath;
         private String wordWithMaxProb;
+        private String wrongWord;
         private double viterbiProbability;
 
         //        public TNode( List<Integer> viterbiPath, String wordWithMaxProb, double viterbiProbability) {
-        public TNode(String wordWithMaxProb, double viterbiProbability) {
+        ViterbiNode(String wordWithMaxProb, String wrongWord, double viterbiProbability) {
 //            this.viterbiPath = new ArrayList<>(viterbiPath);
             this.wordWithMaxProb = wordWithMaxProb;
+            this.wrongWord = wrongWord;
             this.viterbiProbability = viterbiProbability;
         }
     }
 
-    private TNode getMaxTNode(List<String> candidates, String wrongWord) {
+    private static List<ViterbiNode> viterbiNodeList = new ArrayList<>();
+
+    private ViterbiNode getMaxViterbiNode(List<String> candidates, String wrongWord, boolean isInitial) {
         DatasetOperations datasetOperations = new DatasetOperations();
         HiddenMarkovModel hmm = new HiddenMarkovModel();
         double maxProbability = 0.0;
         String maxProbWord = "";
 
         for (int i = 0; i < candidates.size(); i++) {
-            datasetOperations.getMinEditDistance(candidates.get(i), wrongWord, candidates.get(i).length(), wrongWord.length());
+            // this method call is used to get the correct and wrong letters
+            int minEditDistance = datasetOperations.getMinEditDistance(candidates.get(i), wrongWord, candidates.get(i).length(), wrongWord.length());
 
-            String correctLetters = datasetOperations.getCorrectLetters();
-            String wrongLetters = datasetOperations.getWrongLetters();
+            double currentStateProbability;
 
-            double emissionProbability = hmm.getEmissionProbability(correctLetters, wrongLetters);
-            double currentStateProbability = hmm.getTransitionProbability("<s>", candidates.get(i));
+            if (minEditDistance == 1) {
+                String correctLetters = datasetOperations.getCorrectLetters();
+                String wrongLetters = datasetOperations.getWrongLetters();
 
-            currentStateProbability = currentStateProbability * emissionProbability;
+                double emissionProbability = hmm.getEmissionProbability(correctLetters, wrongLetters);
+                emissionProbability = Math.log(emissionProbability) / Math.log(2);
+                double transitionProbability;
+
+                if (isInitial) {
+                    transitionProbability = hmm.getTransitionProbability("<s>", candidates.get(i));
+
+                    transitionProbability = Math.log(transitionProbability) / Math.log(2);
+//                emissionProbability = Math.log(emissionProbability) / Math.log(2);
+
+                    currentStateProbability = transitionProbability + emissionProbability;
+                    currentStateProbability = Math.pow(2, currentStateProbability);
+                } else {
+                    transitionProbability = hmm.getTransitionProbability(viterbiNodeList.get(viterbiNodeList.size() - 1).wordWithMaxProb, candidates.get(i));
+
+                    transitionProbability = Math.log(transitionProbability) / Math.log(2);
+//                    emissionProbability = Math.log(emissionProbability) / Math.log(2);
+
+                    currentStateProbability = transitionProbability + emissionProbability;
+
+//                currentStateProbability = currentStateProbability + Math.log(tNodeList.get(tNodeList.size() - 1).viterbiProbability) / Math.log(2);
+                    currentStateProbability = currentStateProbability + Math.log(viterbiNodeList.get(viterbiNodeList.size() - 1).viterbiProbability) / Math.log(2);
+                    currentStateProbability = Math.pow(2, currentStateProbability);
+                }
+            } else {
+                currentStateProbability = Double.MIN_VALUE;
+            }
 
             if (currentStateProbability > maxProbability) {
                 maxProbability = currentStateProbability;
@@ -157,112 +199,127 @@ public class Viterbi {
             }
         }
 
-        return new TNode(maxProbWord, maxProbability);
+        return new ViterbiNode(maxProbWord, wrongWord, maxProbability);
     }
 
-    public void implementViterbi() {
-        DatasetOperations datasetOperations = new DatasetOperations();
+    public void implementViterbi(String outputFile) throws IOException {
         FReader fR = new FReader();
+        FWriter fileWriter = new FWriter();
         HiddenMarkovModel hmm = new HiddenMarkovModel();
 
+        fileWriter.openFile(outputFile);
         List<String> wrongLines = fR.getWrongLines();
         String regex = fR.getRegex();
 
         Map<String, List<String>> wrongAndCorrectWordForms = fR.getWrongAndCorrectWordForms();
+        double correctGuessCount = 0.0;
+        double totalWrongWordCount = 0.0;
 
 //        for (Map.Entry<String, List<String>> entry: wrongAndCorrectWordForms.entrySet()) {
 //            System.out.println(entry.getKey() + " - " + entry.getValue());
 //        }
 
         for (String line : wrongLines) {
-            List<String> viterbiWords = getViterbiWords(line, regex);
+            List<String> wrongViterbiWords = getWrongViterbiWords(line, regex);
 
-            List<String> states = new ArrayList<>();
-            List<Double> initialProbabilities = new ArrayList<>();
-            List<List<Double>> transitionProbabilities = new ArrayList<>();
-            List<List<Double>> emissionProbabilities = new ArrayList<>();
+            if (wrongViterbiWords != null && wrongViterbiWords.size() > 0) {
+                List<String> candidates = null;
 
-            List<String> candidates = wrongAndCorrectWordForms.get(viterbiWords.get(0));
+                String firstWord = wrongViterbiWords.get(0);
 
-            //////////////////////////////////////// INITIAL PROBABILITIES ////////////////////////////////////
-            String firstWord = viterbiWords.get(0);
+                if (wrongWordsWithCorrectVersion.containsKey(firstWord)) {
+                    candidates = wrongAndCorrectWordForms.get(wrongViterbiWords.get(0));
+                }
 
-            double initialProbability = hmm.getTransitionProbability("<s>", firstWord);
+                //////////////////////////////////////// INITIAL PROBABILITIES ////////////////////////////////////
 
-            List<TNode> tNodeList = new ArrayList<>();
-            List<Integer> path = new ArrayList<>();
-
-            // if the word is typed correct
-            if (candidates == null) {
-                initialProbabilities.add(initialProbability);
-                path.add(0);
-                tNodeList.add(new TNode(firstWord, initialProbabilities.get(0)));
-            }
-            // if the word is typed wrong
-            // calculate the emission probabilities of each candidate
-            else {
-                tNodeList.add(getMaxTNode(candidates, firstWord));
-//                initialProbabilities.add(maxProbability);
-            }
-            //////////////////////////////////////// INITIAL PROBABILITIES ////////////////////////////////////
-
-
-            for (int i = 0; i < viterbiWords.size(); i++) {
-                TNode maxTNode = tNodeList.get(i);
-                String currentViterbiWord = viterbiWords.get(i);
-                candidates = wrongAndCorrectWordForms.get(viterbiWords.get(i));
+                double initialProbability = hmm.getTransitionProbability("<s>", firstWord);
 
                 // if the word is typed correct
-                // calculate only transition probability
                 if (candidates == null) {
-                    double transitionProbability = hmm.getTransitionProbability(maxTNode.wordWithMaxProb, currentViterbiWord);
-                    tNodeList.add(new TNode(currentViterbiWord, transitionProbability));
+//                    initialProbabilities.add(initialProbability);
+//                    path.add(0);
+                    viterbiNodeList.add(new ViterbiNode(firstWord, null, initialProbability));
                 }
                 // if the word is typed wrong
-                // calculate emission and transition probabilities of each candidate
+                // calculate the emission probabilities of each candidate
                 else {
-                    tNodeList.add(getMaxTNode(candidates, viterbiWords.get(i)));
+                    ViterbiNode viterbiNode = getMaxViterbiNode(candidates, firstWord, true);
+                    viterbiNodeList.add(viterbiNode);
+//                initialProbabilities.add(maxProbability);
                 }
-//                List<TNode> tempTNodeList = new ArrayList<>();
+                //////////////////////////////////////// INITIAL PROBABILITIES ////////////////////////////////////
+
+                for (int i = 1; i < wrongViterbiWords.size(); i++) {
+                    ViterbiNode maxViterbiNode = viterbiNodeList.get(i - 1);
+                    String currentViterbiWord = wrongViterbiWords.get(i);
+
+                    candidates = null;
+
+                    if (wrongWordsWithCorrectVersion.containsKey(wrongViterbiWords.get(i))) {
+                        candidates = wrongAndCorrectWordForms.get(wrongViterbiWords.get(i));
+                    }
+
+//                    candidates = wrongAndCorrectWordForms.get(viterbiWords.get(i));
+
+                    // if the word is typed correct
+                    // calculate only transition probability
+                    if (candidates == null) {
+                        double transitionProbability = hmm.getTransitionProbability(maxViterbiNode.wordWithMaxProb, currentViterbiWord);
+                        viterbiNodeList.add(new ViterbiNode(currentViterbiWord, null, transitionProbability));
+                    }
+                    // if the word is typed wrong
+                    // calculate emission and transition probabilities of each candidate
+                    else {
+                        ViterbiNode viterbiNode = getMaxViterbiNode(candidates, wrongViterbiWords.get(i), false);
+                        viterbiNodeList.add(viterbiNode);
+                    }
+                }
+
+                for (ViterbiNode viterbiNode : viterbiNodeList) {
+                    if (viterbiNode.wrongWord != null) {
+                        String correctVersion = wrongWordsWithCorrectVersion.get(viterbiNode.wrongWord);
+                        if (correctVersion.equals(viterbiNode.wordWithMaxProb)) {
+                            correctGuessCount++;
+                        }
+                    }
+//                    System.out.print(tNode.wordWithMaxProb + " ");
+                }
+
+                fileWriter.write(String.format("---------------------------   WRONG SENTENCE    ---------------------------------%n"));
+                StringJoiner stringJoiner = new StringJoiner(" ");
+
+                for (String viterbiWord : wrongViterbiWords) {
+                    stringJoiner.add(viterbiWord);
+                }
+//                fileWriter.write(String.format("Probability of the email is:   %s%n%n", trigram.getProbabilityWithSmoothedTrigram(email)));
+                fileWriter.write(String.format("%s%n%n", stringJoiner.toString()));
+
+
+                fileWriter.write(String.format("--------------------------   VITERBI SENTENCE    --------------------------------%n"));
+                stringJoiner = new StringJoiner(" ");
+
+                for (ViterbiNode correctViterbiWord : viterbiNodeList) {
+                    stringJoiner.add(correctViterbiWord.wordWithMaxProb);
+                }
+
+                fileWriter.write(String.format("%s%n%n%n", stringJoiner.toString()));
+                fileWriter.write(String.format("---------------------------------------------------------------------------------%n%n%n"));
 
             }
 
-            for (TNode tNode : tNodeList) {
-                System.out.println(tNode.wordWithMaxProb + " - " + tNode.viterbiProbability);
-            }
-
-//            for (String currentWrongWord : wrongWords) {
-//                // previousWord : I
-//                // viterbiWords : I wach it each night
-//                // candidates : watch, each, wash
-//                for (String previousWord : viterbiWords) {
-////                    List<String> candidates = wrongAndCorrectWordForms.get(currentWrongWord);
-//
-//                    List<Double> tempTransitionProbabilities = new ArrayList<>();
-//                    List<Double> tempEmissionProbabilities = new ArrayList<>();
-//                    for (String candidate : candidates) {
-//                        states.add(candidate);
-//                        // transition probabilities
-//                        tempTransitionProbabilities.add(hmm.getTransitionProbability(previousWord, candidate));
-//
-//                        // emission probabilities
-//                        datasetOperations.getMinEditDistance(candidate, currentWrongWord, candidate.length(), currentWrongWord.length());
-//                        String correctLetters = datasetOperations.getCorrectLetters();
-//                        String wrongLetters = datasetOperations.getWrongLetters();
-//
-//                        tempEmissionProbabilities.add(hmm.getEmissionProbability(correctLetters, wrongLetters));
-//                    }
-//
-//                    transitionProbabilities.add(tempTransitionProbabilities);
-//                    emissionProbabilities.add(tempEmissionProbabilities);
-//                }
-//            }
-
-
-
-
-
-            wrongWords.clear();
+            wrongWordsWithCorrectVersion.clear();
+            viterbiNodeList.clear();
         }
+
+//        System.out.println(correctGuessCount);
+
+//        FReader.printMap();
+//        System.out.println(wrongAndCorrectWordForms.size());
+//        System.out.println(fR.getTotalWrongWordCount());
+
+        fileWriter.write(String.format("Accuracy is: %s percent.%n", (100.0 * correctGuessCount) / fR.getTotalWrongWordCount()));
+        fileWriter.closeFile();
+//        System.out.println((correctGuessCount) / wrongAndCorrectWordForms.size());
     }
 }

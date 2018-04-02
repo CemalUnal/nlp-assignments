@@ -27,7 +27,9 @@ public class FReader {
     // we need a list of these correct words.
     private static Map<String, List<String>> wrongAndCorrectWordForms = new HashMap<>();
 
-    public List<String> getCorrectedDatasetLines(String filePath) throws IOException {
+//    public List<String> getCorrectedDatasetLines(String filePath) throws IOException {
+    public void getCorrectedDatasetLines(String filePath) throws IOException {
+
         Path file = Paths.get(filePath);
         if (!Files.exists(file)) {
             throw new FileNotFoundException(filePath);
@@ -35,8 +37,9 @@ public class FReader {
 
         BufferedReader reader = new BufferedReader(new FileReader(filePath));
         String line;
+        String correctAndWrongWordTag;
 //        String wrongLine;
-        List<String> correctedDatasetLines = new ArrayList<>();
+//        List<String> correctedDatasetLines = new ArrayList<>();
         DatasetOperations datasetOperations = new DatasetOperations();
         HiddenMarkovModel hmm = new HiddenMarkovModel();
 
@@ -45,7 +48,8 @@ public class FReader {
                 line = line.toLowerCase();
                 rawDatasetLines.add(line);
 
-                extractErrorTagFromLine(line);
+                correctAndWrongWordTag = extractErrorTagFromLine(line);
+                addWrongAndCorrectWordForms(correctAndWrongWordTag);
 
                 wrongLines.add(line);
 
@@ -56,8 +60,9 @@ public class FReader {
 //                wrongLine = datasetOperations.addSentenceBoundary(wrongLine);
                 // unigram map'e ekle
                 hmm.addToUnigramMap(line);
+                hmm.addToBigramMap(line);
 
-                correctedDatasetLines.add(line);
+//                correctedDatasetLines.add(line);
 //                wrongLines.add(wrongLine);
 //                sentencesWithWrongWords.put(wrongLine, new ArrayList<>(wrongWords));
 //                wrongWords.clear();
@@ -65,9 +70,9 @@ public class FReader {
         }
 
         // bigram map'e ekle
-        hmm.createBigramModel(correctedDatasetLines);
+//        hmm.createBigramModel(correctedDatasetLines);
 
-        return correctedDatasetLines;
+//        return correctedDatasetLines;
     }
 
     public void initializeWrongCorrectWordsMap() {
@@ -138,12 +143,9 @@ public class FReader {
         DatasetOperations datasetOperations = new DatasetOperations();
         HiddenMarkovModel hmm = new HiddenMarkovModel();
 
-//        System.out.println(key  + " - " + value);
+        boolean minEditDistanceIsOne = datasetOperations.calculateMinEditDistance(key, hmm.getUnigramCountsMap());
 
-        int minEditDistance = datasetOperations.calculateMinEditDistance(key, hmm.getUnigramCountsMap());
-//        System.out.println(minEditDistance);
-        if (minEditDistance == 1) {
-//            System.out.println(key + " - " + value);
+        if (minEditDistanceIsOne) {
             // if the map contains the correct word, then update its wrong words
             if (map.containsKey(key)) {
                 // And we do not want to add the same
@@ -159,56 +161,6 @@ public class FReader {
             }
         }
     }
-
-//    public List<String> read(String filePath) throws Exception {
-//        Path file = Paths.get(filePath);
-//        if (!Files.exists(file)) {
-//            throw new FileNotFoundException(filePath);
-//        }
-//
-//        BufferedReader reader = new BufferedReader(new FileReader(filePath));
-//        String line;
-//        String correctAndWrongWordTag;
-//        List<String> correctedDatasetLines = new ArrayList<>();
-//        List<String> errTags = new ArrayList<>();
-////        List<String> correctAndWrongWordTags = new ArrayList<>();
-//
-//        while ((line = reader.readLine()) != null) {
-//            if (!line.equals("")) {
-//                line = line.toLowerCase();
-//
-////                correctAndWrongWordTags.add(extractErrorTagFromLine(line, errTags));
-//
-////                addWrongAndCorrectWordForms(correctAndWrongWordTag, line);
-//
-//                line = getCorrectedLine(line, errTags);
-//                correctedDatasetLines.add(line);
-//
-////                allTokens.addAll(separateIntoTokens(line));
-//
-////                correctedDataset.add(line);
-//            }
-//        }
-//
-//        reader = new BufferedReader(new FileReader(filePath));
-//
-//        while ((line = reader.readLine()) != null) {
-//            if (!line.equals("")) {
-//                correctAndWrongWordTag = extractErrorTagFromLine(line, errTags);
-//                addWrongAndCorrectWordForms(correctAndWrongWordTag, line);
-//            }
-//        }
-//
-////        for (String tag : correctAndWrongWordTags) {
-////            addWrongAndCorrectWordForms(tag, line);
-////        }
-//
-//        return correctedDatasetLines;
-//    }
-
-//    public Map<String, List<String>> getCorrectAndWrongWordForms() {
-//        return correctAndWrongWordForms;
-//    }
 
     public Map<String, List<String>> getWrongAndCorrectWordForms() {
         return wrongAndCorrectWordForms;

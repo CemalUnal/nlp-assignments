@@ -7,9 +7,9 @@ public class DatasetOperations {
     private EditDistanceDetails edd;
 //    private Map<String, EditDistanceDetails> editDetailsOfWrongWords = new HashMap<>();
 
-    private String typeOfOperation;
-    private String correctLetters;
-    private String wrongLetters;
+    private static String typeOfOperation;
+    private static String correctLetters;
+    private static String wrongLetters;
 
     /**
      * Creates a sentence with sentence boundaries "<s>" and "</s>".
@@ -68,22 +68,20 @@ public class DatasetOperations {
         return allTokens;
     }
 
-    public int calculateMinEditDistance(String word, Map<String, Double> unigramCountsMap) {
+    public boolean calculateMinEditDistance(String word, Map<String, Double> unigramCountsMap) {
         HiddenMarkovModel hmm = new HiddenMarkovModel();
-        int minEditDistance = 0;
+        double minEditDistance;
+        boolean minEditDistanceIsOne = false;
 
         for (Map.Entry<String, Double> entry : unigramCountsMap.entrySet()) {
             String datasetToken = entry.getKey();
             int tokenLength = datasetToken.length();
             int wordLength = word.length();
 
-            if (Math.abs(tokenLength - wordLength) == 1 || Math.abs(tokenLength - wordLength) == 0) {
+            if (Math.abs(tokenLength - wordLength) == 1 || tokenLength - wordLength == 0) {
                 minEditDistance = getMinEditDistance(datasetToken, word, tokenLength, wordLength);
 
                 if (minEditDistance == 1) {
-//                    editDetailsOfWrongWords.put(word, edd);
-//                    System.out.println(datasetToken + " - " + word);
-
                     if (typeOfOperation.equals("insertion")) {
                         hmm.addToInsertionInfoMap(correctLetters, wrongLetters);
                     } else if (typeOfOperation.equals("deletion")) {
@@ -91,13 +89,13 @@ public class DatasetOperations {
                     } else if (typeOfOperation.equals("substitution")) {
                         hmm.addToSubstitutionInfoMap(correctLetters, wrongLetters);
                     }
-
-                    return minEditDistance;
+                    minEditDistanceIsOne = true;
+//                    return minEditDistance;
                 }
             }
         }
-//        System.out.println(minEditDistance);
-        return minEditDistance;
+
+        return minEditDistanceIsOne;
     }
 
     public int getMinEditDistance(String token, String word, int tokenLength, int wordLength) {

@@ -10,16 +10,13 @@ public class Main {
         String inputFile = args[0];
         String resultsFile = args[1];
 
-        FReader fileReader = new FReader();
+        Preprocessing preprocessing = new Preprocessing();
         Viterbi viterbi = new Viterbi();
 
-        DatasetOperations datasetOperations = new DatasetOperations();
-        HiddenMarkovModel hmm = new HiddenMarkovModel();
-
         try {
-            fileReader.getCorrectedDatasetLines(inputFile);
+            preprocessing.processDatasetLines(inputFile);
 
-            fileReader.initializeWrongCorrectWordsMap();
+            preprocessing.initializeWrongCorrectWordsMap();
 
             viterbi.implementViterbi(resultsFile);
 

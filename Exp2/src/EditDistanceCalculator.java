@@ -2,7 +2,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class DatasetOperations {
+public class EditDistanceCalculator {
 
     private static String typeOfOperation;
     private static String correctLetters;
@@ -19,8 +19,6 @@ public class DatasetOperations {
     public String addSentenceBoundary(String line) {
         String punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
         StringJoiner stringJoiner = new StringJoiner(" ");
-
-//        for (String sentence : correctedDatasetSentences) {
 
         List<String> tokens = separateIntoTokens(line);
 
@@ -45,11 +43,6 @@ public class DatasetOperations {
         }
         stringJoiner.add("</s>");
 
-//            if (!stringJoiner.toString().equals("<s> </s>"))
-//                sentences.add(stringJoiner.toString());
-
-//            stringJoiner = new StringJoiner(" ");
-//        }
         return stringJoiner.toString();
     }
 
@@ -67,8 +60,9 @@ public class DatasetOperations {
         return allTokens;
     }
 
-    public boolean calculateMinEditDistance(String word, Map<String, Double> unigramCountsMap) {
-        HiddenMarkovModel hmm = new HiddenMarkovModel();
+    public boolean minEditDistanceIsOne(String word, Map<String, Double> unigramCountsMap) {
+        Preprocessing preprocessing = new Preprocessing();
+
         double minEditDistance;
         boolean minEditDistanceIsOne = false;
 
@@ -82,11 +76,11 @@ public class DatasetOperations {
 
                 if (minEditDistance == 1) {
                     if (typeOfOperation.equals("insertion")) {
-                        hmm.addToInsertionInfoMap(correctLetters, wrongLetters);
+                        preprocessing.addToInsertionInfoMap(correctLetters, wrongLetters);
                     } else if (typeOfOperation.equals("deletion")) {
-                        hmm.addToDeletionInfoMap(correctLetters, wrongLetters);
+                        preprocessing.addToDeletionInfoMap(correctLetters, wrongLetters);
                     } else if (typeOfOperation.equals("substitution")) {
-                        hmm.addToSubstitutionInfoMap(correctLetters, wrongLetters);
+                        preprocessing.addToSubstitutionInfoMap(correctLetters, wrongLetters);
                     }
                     minEditDistanceIsOne = true;
 //                    return minEditDistance;

@@ -10,20 +10,19 @@ public class Main {
         String inputFile = args[0];
         String resultsFile = args[1];
 
-        FReader fileReader = new FReader();
+        Preprocessing preprocessing = new Preprocessing();
         Viterbi viterbi = new Viterbi();
 
-        DatasetOperations datasetOperations = new DatasetOperations();
-        HiddenMarkovModel hmm = new HiddenMarkovModel();
-
         try {
-            fileReader.getCorrectedDatasetLines(inputFile);
+            System.out.printf("Preprocessing started.%n%n");
 
-            fileReader.initializeWrongCorrectWordsMap();
+            preprocessing.processDatasetLines(inputFile);
+
+            System.out.println("Preprocessing is done. Implementing viterbi...");
 
             viterbi.implementViterbi(resultsFile);
 
-            System.out.println("Execution is done. Estimated execution time is: " + (double) (System.nanoTime() - startTime) / 1000000000.0 + " seconds.");
+            System.out.println("Estimated execution time is: " + (double) (System.nanoTime() - startTime) / 1000000000.0 + " seconds.");
         } catch (Exception e) {
             e.printStackTrace();
         }

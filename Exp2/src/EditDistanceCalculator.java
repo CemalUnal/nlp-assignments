@@ -1,74 +1,17 @@
 import java.util.*;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class DatasetOperations {
+public class EditDistanceCalculator {
+
+    private static Map<List<String>, Double> insertionInfoMap = new HashMap<>();
+    private static Map<List<String>, Double> deletionInfoMap = new HashMap<>();
+    private static Map<List<String>, Double> substitutionInfoMap = new HashMap<>();
 
     private static String typeOfOperation;
     private static String correctLetters;
     private static String wrongLetters;
 
-    /**
-     * Removes punctuation marks from the beginning and
-     * end of all strings in a line (call these strings plain word)
-     * Also adds sentence boundaries
-     *
-     * @param line a line in the dataset
-     * @return a line with plain words
-     */
-    public String addSentenceBoundary(String line) {
-        String punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
-        StringJoiner stringJoiner = new StringJoiner(" ");
-
-//        for (String sentence : correctedDatasetSentences) {
-
-        List<String> tokens = separateIntoTokens(line);
-
-        stringJoiner.add("<s>");
-        for (String token : tokens) {
-            // if the last char of the string is a punctuation mark,
-            // then simply delete it.
-            if (token.length() > 1 && punctuation.indexOf(token.charAt(token.length() - 1)) != -1) {
-                token = token.substring(0, token.length() - 1);
-            }
-
-            // if the first char of the string is a punctuation mark,
-            // then simply delete it.
-            if (token.length() > 1 && punctuation.indexOf(token.charAt(0)) != -1) {
-                token = token.substring(1);
-            }
-
-            // if the token is not a punctuation mark
-            if (punctuation.indexOf(token.charAt(token.length() - 1)) == -1) {
-                stringJoiner.add(token);
-            }
-        }
-        stringJoiner.add("</s>");
-
-//            if (!stringJoiner.toString().equals("<s> </s>"))
-//                sentences.add(stringJoiner.toString());
-
-//            stringJoiner = new StringJoiner(" ");
-//        }
-        return stringJoiner.toString();
-    }
-
-    private ArrayList<String> separateIntoTokens (String line) {
-        ArrayList<String> allTokens = new ArrayList<>();
-
-//        Pattern pattern = Pattern.compile("(\\w+)|[^\\s]|\\p{Punct}"); // this regex is used to separate punctuation marks
-        Pattern pattern = Pattern.compile("[^\\s]+"); // this regex is used to separate punctuation marks
-        Matcher matcher = pattern.matcher(line);
-
-        while (matcher.find()) {
-            allTokens.add(matcher.group());
-        }
-
-        return allTokens;
-    }
-
-    public boolean calculateMinEditDistance(String word, Map<String, Double> unigramCountsMap) {
-        HiddenMarkovModel hmm = new HiddenMarkovModel();
+    public boolean minEditDistanceIsOne(String word, Map<String, Double> unigramCountsMap) {
         double minEditDistance;
         boolean minEditDistanceIsOne = false;
 
@@ -82,11 +25,11 @@ public class DatasetOperations {
 
                 if (minEditDistance == 1) {
                     if (typeOfOperation.equals("insertion")) {
-                        hmm.addToInsertionInfoMap(correctLetters, wrongLetters);
+                        addToInsertionInfoMap(correctLetters, wrongLetters);
                     } else if (typeOfOperation.equals("deletion")) {
-                        hmm.addToDeletionInfoMap(correctLetters, wrongLetters);
+                        addToDeletionInfoMap(correctLetters, wrongLetters);
                     } else if (typeOfOperation.equals("substitution")) {
-                        hmm.addToSubstitutionInfoMap(correctLetters, wrongLetters);
+                        addToSubstitutionInfoMap(correctLetters, wrongLetters);
                     }
                     minEditDistanceIsOne = true;
 //                    return minEditDistance;
@@ -183,6 +126,103 @@ public class DatasetOperations {
         }
 
         return 1 + minEditDistance;
+    }
+
+    private double calculateProbability(String unigramToken, String bigramToken) {
+        Preprocessing preprocessing = new Preprocessing();
+        double probability = 0.0;
+
+        Map<String, Double> unigramCountsMap = preprocessing.getUnigramCountsMap();
+        Map<String, Double> bigramCountsMap = preprocessing.getBigramCountsMap();
+
+        if (bigramCountsMap.containsKey(bigramToken) && unigramCountsMap.containsKey(unigramToken)) {
+            probability = bigramCountsMap.get(bigramToken) / unigramCountsMap.get(unigramToken);
+        }
+
+        return probability;
+    }
+
+
+    public double getTransitionProbability(String previousWord, String currentWord) {
+        String bigramToken = previousWord + " " + currentWord;
+
+        return calculateProbability(previousWord, bigramToken);
+    }
+
+    public double getEmissionProbability(String correctLetters, String wrongLetters) {
+        double numerator = 0.0;
+        double denominator;
+
+        List<String> temp = Arrays.asList(correctLetters, wrongLetters);
+
+        if (insertionInfoMap.containsKey(temp)) {
+            numerator = insertionInfoMap.get(temp);
+        }
+
+        else if (deletionInfoMap.containsKey(temp)) {
+            numerator = deletionInfoMap.get(temp);
+        }
+
+        else if (substitutionInfoMap.containsKey(temp)) {
+            numerator = substitutionInfoMap.get(temp);
+        }
+
+        denominator = getWordCount(correctLetters);
+
+        return numerator / denominator;
+    }
+
+    private double getWordCount(String word) {
+        Preprocessing preprocessing = new Preprocessing();
+        Map<String, Double> unigramCountsMap = preprocessing.getUnigramCountsMap();
+        double count = 0.0;
+
+        for (Map.Entry<String, Double> entry: unigramCountsMap.entrySet()) {
+            double tempCount = entry.getKey().split(Pattern.quote(word), -1).length - 1;
+            tempCount = tempCount * entry.getValue();
+            count = count + tempCount;
+        }
+        return count;
+    }
+
+    private void addToInfoMap(Map<List<String>, Double> map, String correctLetters, String wrongLetters) {
+        if (map.containsKey(Arrays.asList(correctLetters, wrongLetters))) {
+            double currentFrequency = map.get(Arrays.asList(correctLetters, wrongLetters));
+            currentFrequency = currentFrequency + 1.0;
+            map.put(
+                    // unmodifiable so key cannot change hash code
+                    Collections.unmodifiableList(Arrays.asList(correctLetters, wrongLetters)), currentFrequency
+            );
+        } else {
+            map.put(
+                    // unmodifiable so key cannot change hash code
+                    Collections.unmodifiableList(Arrays.asList(correctLetters, wrongLetters)), 1.0
+            );
+        }
+    }
+
+    public void addToInsertionInfoMap(String correctLetters, String wrongLetters) {
+        addToInfoMap(insertionInfoMap, correctLetters, wrongLetters);
+    }
+
+    public void addToDeletionInfoMap(String correctLetters, String wrongLetters) {
+        addToInfoMap(deletionInfoMap, correctLetters, wrongLetters);
+    }
+
+    public void addToSubstitutionInfoMap(String correctLetters, String wrongLetters) {
+        addToInfoMap(substitutionInfoMap, correctLetters, wrongLetters);
+    }
+
+    public Map<List<String>, Double> getInsertionInfoMap() {
+        return insertionInfoMap;
+    }
+
+    public Map<List<String>, Double> getDeletionInfoMap() {
+        return deletionInfoMap;
+    }
+
+    public Map<List<String>, Double> getSubstitutionInfoMap() {
+        return substitutionInfoMap;
     }
 
     public String getCorrectLetters() {

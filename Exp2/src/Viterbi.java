@@ -19,8 +19,8 @@ public class Viterbi {
         return errorTags;
     }
 
-    public String getPlainWord(String word) {
-        String punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
+    private String getPlainWord(String word) {
+        String punctuation = "!\"#$%&'()*+,-./:;<=>@[\\]^_`{|}~";
 
         if (word.length() == 0 ) {
             return "";
@@ -53,6 +53,7 @@ public class Viterbi {
 
         List<String> errorTags = extractErrorTagFromLine(line, regex);
 
+//        System.out.println(errorTags);
         // if the sentence does not contain any wrong typed word,
         // return only its contents
         if (errorTags.size() == 0) {
@@ -125,68 +126,44 @@ public class Viterbi {
         return words;
     }
 
-//    private static List<String> states = Arrays.asList("#", "NN", "VB");
-//    private static List<String> observations = Arrays.asList("I", "go", "some times");
-//    private static List<String> words = new ArrayList<>();
-//    private static List<Double> startProbabilities = Arrays.asList( 0.3, 0.4, 0.3 );
-//    private static double[][] transition_probability = { { 0.2, 0.2, 0.6 }, { 0.4, 0.1, 0.5 }, { 0.1, 0.8, 0.1 } };
-//    private static double[][] emission_probability = { { 0.01, 0.02, 0.02 }, { 0.8, 0.01, 0.5 }, { 0.19, 0.97, 0.48 } };
-
-    private static class ViterbiNode {
-        //        private List<Integer> viterbiPath;
-        private String wordWithMaxProb;
-        private String wrongWord;
-        private double viterbiProbability;
-
-        //        public TNode( List<Integer> viterbiPath, String wordWithMaxProb, double viterbiProbability) {
-        ViterbiNode(String wordWithMaxProb, String wrongWord, double viterbiProbability) {
-//            this.viterbiPath = new ArrayList<>(viterbiPath);
-            this.wordWithMaxProb = wordWithMaxProb;
-            this.wrongWord = wrongWord;
-            this.viterbiProbability = viterbiProbability;
-        }
-    }
-
     private static List<ViterbiNode> viterbiNodeList = new ArrayList<>();
 
     private ViterbiNode getMaxViterbiNode(List<String> candidates, String wrongWord, boolean isInitial) {
-        DatasetOperations datasetOperations = new DatasetOperations();
-        HiddenMarkovModel hmm = new HiddenMarkovModel();
+        EditDistanceCalculator editDistanceCalculator = new EditDistanceCalculator();
+        Preprocessing preprocessing = new Preprocessing();
+
         double maxProbability = 0.0;
         String maxProbWord = "";
 
-        for (int i = 0; i < candidates.size(); i++) {
+        for (String candidate : candidates) {
             // this method call is used to get the correct and wrong letters
-            int minEditDistance = datasetOperations.getMinEditDistance(candidates.get(i), wrongWord, candidates.get(i).length(), wrongWord.length());
+            int minEditDistance = editDistanceCalculator.getMinEditDistance(candidate, wrongWord, candidate.length(), wrongWord.length());
 
             double currentStateProbability;
 
             if (minEditDistance == 1) {
-                String correctLetters = datasetOperations.getCorrectLetters();
-                String wrongLetters = datasetOperations.getWrongLetters();
+                String correctLetters = editDistanceCalculator.getCorrectLetters();
+                String wrongLetters = editDistanceCalculator.getWrongLetters();
 
-                double emissionProbability = hmm.getEmissionProbability(correctLetters, wrongLetters);
+                double emissionProbability = editDistanceCalculator.getEmissionProbability(correctLetters, wrongLetters);
                 emissionProbability = Math.log(emissionProbability) / Math.log(2);
                 double transitionProbability;
 
                 if (isInitial) {
-                    transitionProbability = hmm.getTransitionProbability("<s>", candidates.get(i));
+                    transitionProbability = editDistanceCalculator.getTransitionProbability("<s>", candidate);
 
                     transitionProbability = Math.log(transitionProbability) / Math.log(2);
-//                emissionProbability = Math.log(emissionProbability) / Math.log(2);
 
                     currentStateProbability = transitionProbability + emissionProbability;
                     currentStateProbability = Math.pow(2, currentStateProbability);
                 } else {
-                    transitionProbability = hmm.getTransitionProbability(viterbiNodeList.get(viterbiNodeList.size() - 1).wordWithMaxProb, candidates.get(i));
+                    transitionProbability = editDistanceCalculator.getTransitionProbability(viterbiNodeList.get(viterbiNodeList.size() - 1).getWordWithMaxProb(), candidate);
 
                     transitionProbability = Math.log(transitionProbability) / Math.log(2);
-//                    emissionProbability = Math.log(emissionProbability) / Math.log(2);
 
                     currentStateProbability = transitionProbability + emissionProbability;
 
-//                currentStateProbability = currentStateProbability + Math.log(tNodeList.get(tNodeList.size() - 1).viterbiProbability) / Math.log(2);
-                    currentStateProbability = currentStateProbability + Math.log(viterbiNodeList.get(viterbiNodeList.size() - 1).viterbiProbability) / Math.log(2);
+                    currentStateProbability = currentStateProbability + Math.log(viterbiNodeList.get(viterbiNodeList.size() - 1).getViterbiProbability()) / Math.log(2);
                     currentStateProbability = Math.pow(2, currentStateProbability);
                 }
             } else {
@@ -195,7 +172,7 @@ public class Viterbi {
 
             if (currentStateProbability > maxProbability) {
                 maxProbability = currentStateProbability;
-                maxProbWord = candidates.get(i);
+                maxProbWord = candidate;
             }
         }
 
@@ -203,24 +180,23 @@ public class Viterbi {
     }
 
     public void implementViterbi(String outputFile) throws IOException {
-        FReader fR = new FReader();
         FWriter fileWriter = new FWriter();
-        HiddenMarkovModel hmm = new HiddenMarkovModel();
+        Preprocessing preprocessing = new Preprocessing();
+        EditDistanceCalculator editDistanceCalculator = new EditDistanceCalculator();
 
         fileWriter.openFile(outputFile);
-        List<String> wrongLines = fR.getWrongLines();
-        String regex = fR.getRegex();
+        List<String> wrongLines = preprocessing.getWrongLines();
+        String regex = preprocessing.getRegex();
 
-        Map<String, List<String>> wrongAndCorrectWordForms = fR.getWrongAndCorrectWordForms();
+        Map<String, List<String>> wrongAndCorrectWordForms = preprocessing.getWrongAndCorrectWordForms();
         double correctGuessCount = 0.0;
-        double totalWrongWordCount = 0.0;
-
-//        for (Map.Entry<String, List<String>> entry: wrongAndCorrectWordForms.entrySet()) {
-//            System.out.println(entry.getKey() + " - " + entry.getValue());
-//        }
 
         for (String line : wrongLines) {
             List<String> wrongViterbiWords = getWrongViterbiWords(line, regex);
+
+            // Ignore correct typed sentences
+            if (!Pattern.compile(regex).matcher(line).find())
+                continue;
 
             if (wrongViterbiWords != null && wrongViterbiWords.size() > 0) {
                 List<String> candidates = null;
@@ -233,7 +209,7 @@ public class Viterbi {
 
                 //////////////////////////////////////// INITIAL PROBABILITIES ////////////////////////////////////
 
-                double initialProbability = hmm.getTransitionProbability("<s>", firstWord);
+                double initialProbability = editDistanceCalculator.getTransitionProbability("<s>", firstWord);
 
                 // if the word is typed correct
                 if (candidates == null) {
@@ -265,7 +241,7 @@ public class Viterbi {
                     // if the word is typed correct
                     // calculate only transition probability
                     if (candidates == null) {
-                        double transitionProbability = hmm.getTransitionProbability(maxViterbiNode.wordWithMaxProb, currentViterbiWord);
+                        double transitionProbability = editDistanceCalculator.getTransitionProbability(maxViterbiNode.getWordWithMaxProb(), currentViterbiWord);
                         viterbiNodeList.add(new ViterbiNode(currentViterbiWord, null, transitionProbability));
                     }
                     // if the word is typed wrong
@@ -277,9 +253,9 @@ public class Viterbi {
                 }
 
                 for (ViterbiNode viterbiNode : viterbiNodeList) {
-                    if (viterbiNode.wrongWord != null) {
-                        String correctVersion = wrongWordsWithCorrectVersion.get(viterbiNode.wrongWord);
-                        if (correctVersion.equals(viterbiNode.wordWithMaxProb)) {
+                    if (viterbiNode.getWrongWord() != null) {
+                        String correctVersion = wrongWordsWithCorrectVersion.get(viterbiNode.getWrongWord());
+                        if (correctVersion.equals(viterbiNode.getWordWithMaxProb())) {
                             correctGuessCount++;
                         }
                     }
@@ -292,7 +268,7 @@ public class Viterbi {
                 for (String viterbiWord : wrongViterbiWords) {
                     stringJoiner.add(viterbiWord);
                 }
-//                fileWriter.write(String.format("Probability of the email is:   %s%n%n", trigram.getProbabilityWithSmoothedTrigram(email)));
+
                 fileWriter.write(String.format("%s%n%n", stringJoiner.toString()));
 
 
@@ -300,7 +276,7 @@ public class Viterbi {
                 stringJoiner = new StringJoiner(" ");
 
                 for (ViterbiNode correctViterbiWord : viterbiNodeList) {
-                    stringJoiner.add(correctViterbiWord.wordWithMaxProb);
+                    stringJoiner.add(correctViterbiWord.getWordWithMaxProb());
                 }
 
                 fileWriter.write(String.format("%s%n%n%n", stringJoiner.toString()));
@@ -312,14 +288,12 @@ public class Viterbi {
             viterbiNodeList.clear();
         }
 
-//        System.out.println(correctGuessCount);
-
-//        FReader.printMap();
-//        System.out.println(wrongAndCorrectWordForms.size());
-//        System.out.println(fR.getTotalWrongWordCount());
-
-        fileWriter.write(String.format("Accuracy is: %s percent.%n", (100.0 * correctGuessCount) / fR.getTotalWrongWordCount()));
+        fileWriter.write(String.format("Accuracy is: %s percent.%n", (100.0 * correctGuessCount) / preprocessing.getTotalWrongWordCount()));
         fileWriter.closeFile();
-//        System.out.println((correctGuessCount) / wrongAndCorrectWordForms.size());
+
+        System.out.println("Viterbi algorithm is implemented.");
+
+        System.out.printf("%nAccuracy is: %s percent.%n", (100.0 * correctGuessCount) / preprocessing.getTotalWrongWordCount());
+        System.out.printf("See the output file for corrected sentences.%n%n");
     }
 }

@@ -6,7 +6,19 @@ import java.util.regex.Pattern;
 public class Viterbi {
 
     private static Map<String, String> wrongWordsWithCorrectVersion = new HashMap<>();
+    private static List<ViterbiNode> viterbiNodeList = new ArrayList<>();
 
+    /**
+     * Extracts the error tags from given line of
+     * the input dataset
+     *
+     * An error tag is for example "<ERR targ=sister> siter </ERR>"
+     *
+     * @param line a line of the input dataset
+     * @param regex error tag regex
+     *
+     * @return all error tags in the line
+     */
     private List<String> extractErrorTagFromLine(String line, String regex) {
         List<String> errorTags = new ArrayList<>();
         Pattern pattern = Pattern.compile(regex);
@@ -19,6 +31,15 @@ public class Viterbi {
         return errorTags;
     }
 
+    /**
+     * Returns the word without any punctuation marks except the
+     * inside of it
+     *
+     * @param word word
+     *
+     * @return the word without any punctuation marks except the
+     *         inside of it
+     */
     private String getPlainWord(String word) {
         String punctuation = "!\"#$%&'()*+,-./:;<=>@[\\]^_`{|}~";
 
@@ -46,6 +67,14 @@ public class Viterbi {
         return word;
     }
 
+    /**
+     * Returns all wrong words of given line
+     *
+     * @param line a line of the input dataset
+     * @param regex error tag regex
+     *
+     * @return all wrong words of given line
+     */
     private List<String> getWrongViterbiWords(String line, String regex) {
         List<Integer> beginIndexList = new ArrayList<>();
         List<Integer> endIndexList = new ArrayList<>();
@@ -53,7 +82,6 @@ public class Viterbi {
 
         List<String> errorTags = extractErrorTagFromLine(line, regex);
 
-//        System.out.println(errorTags);
         // if the sentence does not contain any wrong typed word,
         // return only its contents
         if (errorTags.size() == 0) {
@@ -118,30 +146,42 @@ public class Viterbi {
         // 1 ve 0 olarak algiliyordu size'i. neden oldugunu anlamadim
         if (endIndexList.size() != 0 && line.length() - 1 > endIndexList.get(endIndexList.size() - 1)) {
             String lastWordOfTheLine = line.substring(endIndexList.get(endIndexList.size() - 1) + 2, line.length());
+
             lastWordOfTheLine = getPlainWord(lastWordOfTheLine);
-            if (!lastWordOfTheLine.equals("") && !lastWordOfTheLine.equals(" "))
+
+            if (!lastWordOfTheLine.equals("") && !lastWordOfTheLine.equals(" ")) {
                 words.add(lastWordOfTheLine);
+            }
         }
 
         return words;
     }
 
-    private static List<ViterbiNode> viterbiNodeList = new ArrayList<>();
-
+    /**
+     * Returns the ViterbiNode that has the maximum probability
+     * It chooses this node by calculating the emission, transition
+     * and initial probabilities.
+     *
+     * @param candidates all candidates for the wrong word
+     * @param wrongWord wrong word
+     * @param isInitial boolean value to specify the given word is first word
+     *                  of the sentence or not
+     *
+     * @return ViterbiNode that has the maximum probability
+     */
     private ViterbiNode getMaxViterbiNode(List<String> candidates, String wrongWord, boolean isInitial) {
         EditDistanceCalculator editDistanceCalculator = new EditDistanceCalculator();
-        Preprocessing preprocessing = new Preprocessing();
 
         double maxProbability = 0.0;
         String maxProbWord = "";
 
         for (String candidate : candidates) {
             // this method call is used to get the correct and wrong letters
-            int minEditDistance = editDistanceCalculator.getMinEditDistance(candidate, wrongWord, candidate.length(), wrongWord.length());
+            boolean minEditDistanceIsOne = editDistanceCalculator.getMinEditDistance(candidate, wrongWord);
 
             double currentStateProbability;
 
-            if (minEditDistance == 1) {
+            if (minEditDistanceIsOne) {
                 String correctLetters = editDistanceCalculator.getCorrectLetters();
                 String wrongLetters = editDistanceCalculator.getWrongLetters();
 
@@ -179,6 +219,12 @@ public class Viterbi {
         return new ViterbiNode(maxProbWord, wrongWord, maxProbability);
     }
 
+    /**
+     * Implements the Viterbi Algorithm
+     *
+     * @param outputFile output file to write execution results
+     *
+     */
     public void implementViterbi(String outputFile) throws IOException {
         FWriter fileWriter = new FWriter();
         Preprocessing preprocessing = new Preprocessing();
@@ -213,8 +259,6 @@ public class Viterbi {
 
                 // if the word is typed correct
                 if (candidates == null) {
-//                    initialProbabilities.add(initialProbability);
-//                    path.add(0);
                     viterbiNodeList.add(new ViterbiNode(firstWord, null, initialProbability));
                 }
                 // if the word is typed wrong
@@ -222,7 +266,6 @@ public class Viterbi {
                 else {
                     ViterbiNode viterbiNode = getMaxViterbiNode(candidates, firstWord, true);
                     viterbiNodeList.add(viterbiNode);
-//                initialProbabilities.add(maxProbability);
                 }
                 //////////////////////////////////////// INITIAL PROBABILITIES ////////////////////////////////////
 
@@ -235,8 +278,6 @@ public class Viterbi {
                     if (wrongWordsWithCorrectVersion.containsKey(wrongViterbiWords.get(i))) {
                         candidates = wrongAndCorrectWordForms.get(wrongViterbiWords.get(i));
                     }
-
-//                    candidates = wrongAndCorrectWordForms.get(viterbiWords.get(i));
 
                     // if the word is typed correct
                     // calculate only transition probability
@@ -259,7 +300,6 @@ public class Viterbi {
                             correctGuessCount++;
                         }
                     }
-//                    System.out.print(tNode.wordWithMaxProb + " ");
                 }
 
                 fileWriter.write(String.format("---------------------------   WRONG SENTENCE    ---------------------------------%n"));

@@ -21,16 +21,24 @@ public class Preprocessing {
     private static Map<String, Double> unigramCountsMap = new HashMap<>();
 
     private List<String> rawDatasetLines = new ArrayList<>();
-    //    private static List<String> errTags = new ArrayList<>();
+    private static List<String> errorTags = new ArrayList<>();
     private static List<String> wrongLines = new ArrayList<>();
 
     private static double totalWrongWordCount = 0.0;
-    private String correctedLine;
 
     // since there can be more than one correct word for one wrong word,
     // we need a list of these correct words.
     private static Map<String, List<String>> wrongAndCorrectWordForms = new HashMap<>();
 
+    /**
+     * Open the given input dataset and reads it line by line,
+     * Converts each line to lowercase,
+     * Corrects each line and adds sentence boundaries to them,
+     * After that it fills the unigram and bigram counts maps.
+     *
+     * @param filePath path of input dataset
+     *
+     */
     public void processDatasetLines(String filePath) throws IOException {
         Path file = Paths.get(filePath);
         if (!Files.exists(file)) {
@@ -40,99 +48,80 @@ public class Preprocessing {
         BufferedReader reader = new BufferedReader(new FileReader(filePath));
 
         String line;
-        String correctAndWrongWordTag;
 
         while ((line = reader.readLine()) != null) {
             if (!line.equals("")) {
                 line = line.toLowerCase();
+                rawDatasetLines.add(line);
+
+                extractErrorTagFromLine(line);
 
                 wrongLines.add(line);
 
-//                long startTime = System.nanoTime();
-                correctAndWrongWordTag = extractErrorTagFromLine(line);
-//                double cemal1 = (double) (System.nanoTime() - startTime) / 1000000000.0;
-//                System.out.println("1: " + (double) (System.nanoTime() - startTime) / 1000000000.0 + " seconds.");
-//                line = getCorrectedLine(line);
+                line = getCorrectedLine(line);
 
-//                startTime = System.nanoTime();
-                line = addSentenceBoundary(correctedLine);
-//                System.out.println("2: " + (double) (System.nanoTime() - startTime) / 1000000000.0 + " seconds.");
-//                double cemal2 = (double) (System.nanoTime() - startTime) / 1000000000.0;
+                line = addSentenceBoundary(line);
 
-//                startTime = System.nanoTime();
                 addToUnigramMap(line);
-//                System.out.println("3: " + (double) (System.nanoTime() - startTime) / 1000000000.0 + " seconds.");
-//                double cemal3 = (double) (System.nanoTime() - startTime) / 1000000000.0;
-
-//                startTime = System.nanoTime();
                 addToBigramMap(line);
-//                System.out.println("4: " + (double) (System.nanoTime() - startTime) / 1000000000.0 + " seconds.");
-//                double cemal4 = (double) (System.nanoTime() - startTime) / 1000000000.0;
-
-//                startTime = System.nanoTime();
-                addWrongAndCorrectWordForms(correctAndWrongWordTag);
-//                System.out.println("5: " + (double) (System.nanoTime() - startTime) / 1000000000.0 + " seconds.");
-//                double cemal5 = (double) (System.nanoTime() - startTime) / 1000000000.0;
-//
-//                double x = Math.max(cemal1, cemal2);
-//                double y = Math.max(cemal3, cemal4);
-//                double z = Math.max(y, x);
-//                z = Math.max(z, cemal5);
-//
-//                System.out.println("Max: " + z);
             }
         }
     }
 
-//    public void initializeWrongCorrectWordsMap() {
-//        String correctAndWrongWordTag;
-//        errTags.clear();
-////        System.out.println(rawDatasetLines.size());
-//        for (String line : rawDatasetLines) {
-////            System.out.println(line);
-//            correctAndWrongWordTag = extractErrorTagFromLine(line);
-//
-//            addWrongAndCorrectWordForms(correctAndWrongWordTag);
-//        }
-//    }
+    /**
+     * Initializes the wrongAndCorrectWordForms map
+     *
+     */
+    public void initializeWrongCorrectWordsMap() {
+        String correctAndWrongWordTag;
+        errorTags.clear();
 
+        for (String line : rawDatasetLines) {
+            correctAndWrongWordTag = extractErrorTagFromLine(line);
+
+            addWrongAndCorrectWordForms(correctAndWrongWordTag);
+        }
+    }
+
+    /**
+     * Extracts the error tags from given line of
+     * the input dataset
+     *
+     * An error tag is for example "<ERR targ=sister> siter </ERR>"
+     *
+     * @param line a line of the input dataset
+     *
+     * @return all error tags in the line
+     */
     private String extractErrorTagFromLine(String line) {
-        correctedLine = line;
         Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(correctedLine);
+        Matcher matcher = pattern.matcher(line);
         StringBuilder stringBuilder = new StringBuilder();
 
         while (matcher.find()) {
             stringBuilder.append(matcher.group());
-            String errorTag = matcher.group();
-//            errTags.add(matcher.group());
-
-            int beginIndex = correctedLine.indexOf(errorTag);
-            int lastIndex = errorTag.length();
-
-            Pattern pattern2 = Pattern.compile(regex);
-            Matcher matcher2 = pattern2.matcher(errorTag);
-
-            String correctWord;
-//            System.out.println(line);
-            while (matcher2.find()) {
-                correctWord = matcher2.group(2);
-
-                lastIndex = lastIndex + beginIndex;
-                correctedLine = correctedLine.substring(0, beginIndex) + correctWord + correctedLine.substring(lastIndex, correctedLine.length());
-            }
-
+            errorTags.add(matcher.group());
         }
 
         return stringBuilder.toString();
     }
 
+    /**
+     * Extracts the wrong word and its correct versions from line.
+     *
+     * After that it calls the addToWrongAndCorrectWordFormsMap method
+     * with the parameters wrongAndCorrectWordForms, wrongWord and correctWord
+     *
+     * @param correctAndWrongWordTag correctAndWrongWordTag "<ERR targ=sister> siter </ERR>)"
+     *
+     */
     private void addWrongAndCorrectWordForms(String correctAndWrongWordTag) {
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(correctAndWrongWordTag);
 
         String correctWord;
         String wrongWord;
+
         while (matcher.find()) {
             correctWord = matcher.group(2);
             wrongWord = matcher.group(5);
@@ -142,28 +131,43 @@ public class Preprocessing {
         }
     }
 
-//    private String getCorrectedLine(String line) {
-//        for (String errTag : errTags) {
-//            int beginIndex = line.indexOf(errTag);
-//            int lastIndex = errTag.length();
-//
-//            Pattern pattern = Pattern.compile(regex);
-//            Matcher matcher = pattern.matcher(errTag);
-//
-//            String correctWord;
-////            System.out.println(line);
-//            while (matcher.find()) {
-//                correctWord = matcher.group(2);
-//
-//                lastIndex = lastIndex + beginIndex;
-//                line = line.substring(0, beginIndex) + correctWord + line.substring(lastIndex, line.length());
-//            }
-//        }
-//        errTags.clear();
-//
-//        return line;
-//    }
+    /**
+     * Returns the corrected version of the wrong typed line
+     *
+     * @param line a line of the input dataset
+     *
+     * @return corrected version of the line
+     */
+    private String getCorrectedLine(String line) {
+        for (String errTag : errorTags) {
+            int beginIndex = line.indexOf(errTag);
+            int lastIndex = errTag.length();
 
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(errTag);
+
+            String correctWord;
+            while (matcher.find()) {
+                correctWord = matcher.group(2);
+
+                lastIndex = lastIndex + beginIndex;
+                line = line.substring(0, beginIndex) + correctWord + line.substring(lastIndex, line.length());
+            }
+        }
+        errorTags.clear();
+
+        return line;
+    }
+
+    /**
+     * Adds the wrong words and their correct forms to the
+     * wrongAndCorrectWordForms map by calling
+     *
+     * @param map wrongAndCorrectWordForms
+     * @param key wrong word
+     * @param value correct version of the wrong word
+     *
+     */
     private void addToWrongAndCorrectWordFormsMap(Map<String, List<String>> map, String key, String value) {
         EditDistanceCalculator editDistanceCalculator = new EditDistanceCalculator();
 
@@ -195,7 +199,7 @@ public class Preprocessing {
      * @return a line with plain words
      */
     public String addSentenceBoundary(String line) {
-        String punctuation = "!\"#$%&'()*+,-./:;<=>@[\\]^_`{|}~";
+        String punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
         StringJoiner stringJoiner = new StringJoiner(" ");
 
         List<String> tokens = separateIntoTokens(line);
@@ -224,10 +228,16 @@ public class Preprocessing {
         return stringJoiner.toString();
     }
 
+    /**
+     * Separates the given line into tokens
+     *
+     * @param line a line of the input dataset
+     *
+     * @return allTokens
+     */
     private ArrayList<String> separateIntoTokens (String line) {
         ArrayList<String> allTokens = new ArrayList<>();
 
-//        Pattern pattern = Pattern.compile("(\\w+)|[^\\s]|\\p{Punct}"); // this regex is used to separate punctuation marks
         Pattern pattern = Pattern.compile("[^\\s]+"); // this regex is used to separate punctuation marks
         Matcher matcher = pattern.matcher(line);
 
@@ -244,7 +254,7 @@ public class Preprocessing {
      * @param map a map to add an element to it
      * @param word a word to add to map
      */
-    private void addWordToNGramMap(Map<String, Double> map,  String word) {
+    private void addWordNGramToMap(Map<String, Double> map,  String word) {
         if (map.containsKey(word)) {
             double currentFrequency = map.get(word);
             currentFrequency = currentFrequency + 1.0;
@@ -264,7 +274,7 @@ public class Preprocessing {
     public void addToUnigramMap(String line) {
         String[] words = line.split("\\s+");
         for (String word : words) {
-            addWordToNGramMap(unigramCountsMap, word);
+            addWordNGramToMap(unigramCountsMap, word);
         }
     }
 
@@ -279,57 +289,68 @@ public class Preprocessing {
         String[] words = line.split("\\s+");
         for (int i = 1; i < words.length; i++) {
             String bigramToken = words[i - 1] + " " + words[i];
-            addWordToNGramMap(bigramCountsMap, bigramToken);
+            addWordNGramToMap(bigramCountsMap, bigramToken);
         }
     }
 
+    /**
+     * Returns unigramCountsMap
+     *
+     * @return unigramCountsMap
+     *
+     */
     public Map<String, Double> getUnigramCountsMap() {
         return unigramCountsMap;
     }
 
+    /**
+     * Returns bigramCountsMap
+     *
+     * @return bigramCountsMap
+     *
+     */
     public Map<String, Double> getBigramCountsMap() {
         return bigramCountsMap;
     }
 
+    /**
+     * Returns wrongAndCorrectWordForms
+     *
+     * @return wrongAndCorrectWordForms
+     *
+     */
     public Map<String, List<String>> getWrongAndCorrectWordForms() {
         return wrongAndCorrectWordForms;
     }
 
-    public List<String> getRawDatasetLines() {
-        return rawDatasetLines;
-    }
-
+    /**
+     * Returns wrongLines
+     *
+     * @return wrongLines
+     *
+     */
     public List<String> getWrongLines() {
         return wrongLines;
     }
 
-//    public List<String> getErrTags() {
-//        return errTags;
-//    }
-
+    /**
+     * Returns regex
+     *
+     * @return regex
+     *
+     */
     public String getRegex() {
         return regex;
     }
 
+    /**
+     * Returns totalWrongWordCount
+     *
+     * @return totalWrongWordCount
+     *
+     */
     public double getTotalWrongWordCount() {
         return totalWrongWordCount;
     }
-
-    public static void printMap() {
-        for (Map.Entry<String, List<String>> entry: wrongAndCorrectWordForms.entrySet()) {
-            System.out.println("Word is : " + entry.getKey());
-            System.out.println("Word list :");
-            for (String wrongWord : entry.getValue()) {
-                System.out.println(wrongWord);
-            }
-        }
-    }
-
-//    public void printMap() {
-//        for (Map.Entry<String, Double> entry: bigramCountsMap.entrySet()) {
-//            System.out.println("Word is : " + entry.getKey());
-//            System.out.println("Word count is: " + entry.getValue());
-//        }
-//    }
 
 }

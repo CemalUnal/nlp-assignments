@@ -12,7 +12,7 @@ _Number: 21328538_
 I have wrote my code using **JAVA (JAVA 8)** programming language. And there are six number of classes.
 
 #### EditDistanceCalculator.java
-This class contains a method to calculate **min edit distance** between two words. This method also determines the type of operation to get wrong word from given correct word. For example correct word is watch and wrong word is wach. Then;
+This class contains a method to calculate **min edit distance** between two words. This method also determines the type of operation to get wrong word from given correct word. For example correct word is **"watch"** and wrong word is **"wach"**. Then;
 - The edit distance will be **1**.
 - Type of operation is **deletion**
 - Letters **"tc"** in the correct word became **"c"** in the wrong word.
@@ -63,13 +63,13 @@ Main purpose of **FWriter** class is writing a message to a given output file. T
 - Close given output file.
 
 #### Main.java
-This is the main class of the assignment. It calls the method reads and processes the given input file. And also it calls the method that implements viterbi algorithm.
+This is the main class of the assignment. It calls the methods that reads and processes the given input file. And also it calls the method that implements viterbi algorithm.
 
 #### Accuracy
-Accuracy of my code is approximately 67.79 percent.
+Accuracy of my code is approximately 49.67 percent. This value can be more greater if use larger and more accurate datasets.
 
 ## Shortcomings of My Code
-- Execution time is nearly 40 minutes. This execution time could be slightly lower.
+- Execution time is nearly 5 seconds. This execution time may be lower.
 
 ## IMPORTANT NOTE BEFORE EXECUTION
 !!! I have used JAVA 8 this assignment. It may not be compiled with older versions of JAVA. !!!

@@ -11,28 +11,37 @@ public class EditDistanceCalculator {
     private static String correctLetters;
     private static String wrongLetters;
 
+    /**
+     * Determines whether the minimum edit distance of two words is
+     * equal to 1.
+     * Also it fills the insertion, substitution, deletion maps
+     * according to type of operation
+     *
+     * @param word wrong word
+     * @param unigramCountsMap unigram counts in the dataset
+     *
+     * @return true if minimum edit distance is one
+     *         false if minimum edit distance is not one
+     */
     public boolean minEditDistanceIsOne(String word, Map<String, Double> unigramCountsMap) {
-        double minEditDistance;
         boolean minEditDistanceIsOne = false;
 
         for (Map.Entry<String, Double> entry : unigramCountsMap.entrySet()) {
             String datasetToken = entry.getKey();
-            int tokenLength = datasetToken.length();
-            int wordLength = word.length();
 
-            if (Math.abs(tokenLength - wordLength) == 1 || tokenLength - wordLength == 0) {
-                minEditDistance = getMinEditDistance(datasetToken, word, tokenLength, wordLength);
+            minEditDistanceIsOne = getMinEditDistance(datasetToken, word);
 
-                if (minEditDistance == 1) {
-                    if (typeOfOperation.equals("insertion")) {
+            if (minEditDistanceIsOne) {
+                switch (typeOfOperation) {
+                    case "insertion":
                         addToInsertionInfoMap(correctLetters, wrongLetters);
-                    } else if (typeOfOperation.equals("deletion")) {
+                        break;
+                    case "deletion":
                         addToDeletionInfoMap(correctLetters, wrongLetters);
-                    } else if (typeOfOperation.equals("substitution")) {
+                        break;
+                    case "substitution":
                         addToSubstitutionInfoMap(correctLetters, wrongLetters);
-                    }
-                    minEditDistanceIsOne = true;
-//                    return minEditDistance;
+                        break;
                 }
             }
         }
@@ -40,94 +49,72 @@ public class EditDistanceCalculator {
         return minEditDistanceIsOne;
     }
 
-    public int getMinEditDistance(String token, String word, int tokenLength, int wordLength) {
-        // If the correctWord is empty, the cost is equal to
-        // the length of wrongWord
-        if (tokenLength == 0) {
-            if (wordLength - 1 == 0) {
-                typeOfOperation = "insertion";
-                String currentLetter = String.valueOf(word.charAt(wordLength - 1));
-                String previousLetter = "#";
+    /**
+     * Determines whether the minimum edit distance of two words is
+     * equal to 1.
+     * Also determines the type of operation (insertion, deletion, substitution)
+     * and determines the letters that are replaced to get the wrong word.
+     *
+     * @param correctWord correct word in the unigram map
+     * @param wrongWord wrong word
+     *
+     * @return true if minimum edit distance is one
+     *         false if minimum edit distance is not one
+     */
+    public boolean getMinEditDistance(String correctWord, String wrongWord) {
+        int lengthOfCorrectWord = correctWord.length();
+        int lengthOfWrongWord = wrongWord.length();
 
-                correctLetters = String.valueOf(previousLetter);
-                wrongLetters = String.valueOf(previousLetter) + String.valueOf(currentLetter);
-            }
-            return wordLength;
+        // neither length of two words are not same nor differences between them is is not 1,
+        // then do not need to calculate minimum edit distance
+        if (!(Math.abs(lengthOfCorrectWord - lengthOfWrongWord) == 1 || lengthOfCorrectWord - lengthOfWrongWord == 0)) {
+            return false;
         }
 
-        // If the wrongWord is empty, the cost is equal to
-        // the length of the correctWord
-        if (wordLength == 0) {
-            if (tokenLength - 1 == 0) {
-                typeOfOperation = "deletion";
-                char currentLetter = token.charAt(tokenLength - 1);
-                char previousLetter = '-';
-
-                correctLetters = String.valueOf(previousLetter) + String.valueOf(currentLetter);
-                wrongLetters = String.valueOf(previousLetter);
-            }
-            return tokenLength;
-        }
-
-        // If last characters of two strings are same, nothing
-        // much to do. Ignore last characters and get count for
-        // remaining strings.
-        if (token.charAt(tokenLength - 1) == word.charAt(wordLength - 1))
-            return getMinEditDistance(token, word, tokenLength - 1, wordLength - 1);
-
-        // If last characters are not same, calculate all three operation cost
-        int insertionEditDistance = getMinEditDistance(token, word, tokenLength, wordLength - 1);
-        int deletionEditDistance = getMinEditDistance(token, word, tokenLength - 1, wordLength);
-        int substitutionEditDistance = getMinEditDistance(token, word, tokenLength - 1, wordLength - 1);
-
-        int minEditDistance;
-
-        // type is insertion
-        if (insertionEditDistance <= deletionEditDistance && insertionEditDistance <= substitutionEditDistance) {
+        if (lengthOfWrongWord > lengthOfCorrectWord) {
             typeOfOperation = "insertion";
-            String currentLetter = String.valueOf(word.charAt(wordLength - 1));
-            String previousLetter = "#";
-
-            if (wordLength - 2 >= 0) {
-                previousLetter = String.valueOf(word.charAt(wordLength - 2));
+            char previousChar = '#';
+            for (int i = 0; i < lengthOfWrongWord; i++) {
+                if (i == lengthOfCorrectWord || correctWord.charAt(i) != wrongWord.charAt(i)) {
+                    correctLetters = String.valueOf(previousChar);
+                    wrongLetters = correctLetters + String.valueOf(wrongWord.charAt(i));
+                    return true;
+                }
+                previousChar = wrongWord.charAt(i);
             }
-
-            correctLetters = String.valueOf(previousLetter);
-            wrongLetters = String.valueOf(previousLetter) + String.valueOf(currentLetter);
-
-            minEditDistance = insertionEditDistance;
-        }
-        // type is deletion
-        else if (deletionEditDistance <= insertionEditDistance && deletionEditDistance <= substitutionEditDistance) {
+        } else if (lengthOfCorrectWord > lengthOfWrongWord) {
             typeOfOperation = "deletion";
-
-            char currentLetter = token.charAt(tokenLength - 1);
-            char previousLetter = '-';
-
-            if (wordLength - 1 >= 0) {
-                previousLetter = word.charAt(wordLength - 1);
+            char previousChar = '#';
+            for (int i = 0; i < lengthOfCorrectWord; i++) {
+                if (i == lengthOfWrongWord || wrongWord.charAt(i) != correctWord.charAt(i)) {
+                    correctLetters = String.valueOf(previousChar) + String.valueOf(correctWord.charAt(i));
+                    wrongLetters = String.valueOf(previousChar);
+                    return true;
+                }
+                previousChar = wrongWord.charAt(i);
             }
-
-            correctLetters = String.valueOf(previousLetter) + String.valueOf(currentLetter);
-            wrongLetters = String.valueOf(previousLetter);
-
-            minEditDistance = deletionEditDistance;
-        }
-        // type is substitution
-        else {
+        } else {
             typeOfOperation = "substitution";
-            char currentLetter = token.charAt(tokenLength - 1);
-            char previousLetter = word.charAt(wordLength - 1);
-
-            correctLetters = String.valueOf(currentLetter);
-            wrongLetters = String.valueOf(previousLetter);
-
-            minEditDistance = substitutionEditDistance;
+            for (int i = 0; i < lengthOfWrongWord; i++) {
+                if (wrongWord.charAt(i) != correctWord.charAt(i)) {
+                    correctLetters = String.valueOf(correctWord.charAt(i));
+                    wrongLetters = String.valueOf(wrongWord.charAt(i));
+                    return true;
+                }
+            }
         }
 
-        return 1 + minEditDistance;
+        return false;
     }
 
+    /**
+     * Calculates the bigram probability
+     *
+     * @param unigramToken unigram token
+     * @param bigramToken bigram token
+     *
+     * @return calculated probability
+     */
     private double calculateProbability(String unigramToken, String bigramToken) {
         Preprocessing preprocessing = new Preprocessing();
         double probability = 0.0;
@@ -142,13 +129,40 @@ public class EditDistanceCalculator {
         return probability;
     }
 
-
+    /**
+     * Calculates the transition probability by
+     * calling the bigram probability calculator method
+     *
+     * For example bigram token is "I watch"
+     * then previousWord is I and currentWord is watch.
+     *
+     * @param previousWord previous word
+     * @param currentWord current word
+     *
+     * @return calculated transition probability
+     */
     public double getTransitionProbability(String previousWord, String currentWord) {
         String bigramToken = previousWord + " " + currentWord;
 
         return calculateProbability(previousWord, bigramToken);
     }
 
+    /**
+     * Calculates the emission probability by
+     * using the insertion, substitution, deletion maps
+     *
+     * For example; the correct word is "actress" and the wrong
+     * word is  "acress" then the correctLetters will be
+     * "ct" and the wrongLetters will be "c"
+     *
+     * Probability is equal to the number of events "ct"
+     * will become "t" divided by "ct" count in the whole dataset.
+     *
+     * @param correctLetters correct letters
+     * @param wrongLetters wrong letters
+     *
+     * @return calculated emission probability
+     */
     public double getEmissionProbability(String correctLetters, String wrongLetters) {
         double numerator = 0.0;
         double denominator;
@@ -172,6 +186,14 @@ public class EditDistanceCalculator {
         return numerator / denominator;
     }
 
+    /**
+     * Calculates the number of occurrences of given word
+     * in the given dataset.
+     *
+     * @param word word
+     *
+     * @return number of occurrences in the given dataset
+     */
     private double getWordCount(String word) {
         Preprocessing preprocessing = new Preprocessing();
         Map<String, Double> unigramCountsMap = preprocessing.getUnigramCountsMap();
@@ -185,6 +207,15 @@ public class EditDistanceCalculator {
         return count;
     }
 
+    /**
+     * Adds correctLetters and wrongLetters to
+     * insertion, substitution, deletion maps
+     *
+     * @param map insertion, substitution, deletion maps
+     * @param correctLetters correct letters
+     * @param wrongLetters wrong letters
+     *
+     */
     private void addToInfoMap(Map<List<String>, Double> map, String correctLetters, String wrongLetters) {
         if (map.containsKey(Arrays.asList(correctLetters, wrongLetters))) {
             double currentFrequency = map.get(Arrays.asList(correctLetters, wrongLetters));
@@ -201,34 +232,58 @@ public class EditDistanceCalculator {
         }
     }
 
+    /**
+     * Calls addToInfoMap with correctLetters and wrongLetters
+     * and insertionInfoMap
+     *
+     * @param correctLetters correct letters
+     * @param wrongLetters wrong letters
+     *
+     */
     public void addToInsertionInfoMap(String correctLetters, String wrongLetters) {
         addToInfoMap(insertionInfoMap, correctLetters, wrongLetters);
     }
 
+    /**
+     * Calls addToInfoMap with correctLetters and wrongLetters
+     * and deletionInfoMap
+     *
+     * @param correctLetters correct letters
+     * @param wrongLetters wrong letters
+     *
+     */
     public void addToDeletionInfoMap(String correctLetters, String wrongLetters) {
         addToInfoMap(deletionInfoMap, correctLetters, wrongLetters);
     }
 
+    /**
+     * Calls addToInfoMap with correctLetters and wrongLetters
+     * and substitutionInfoMap
+     *
+     * @param correctLetters correct letters
+     * @param wrongLetters wrong letters
+     *
+     */
     public void addToSubstitutionInfoMap(String correctLetters, String wrongLetters) {
         addToInfoMap(substitutionInfoMap, correctLetters, wrongLetters);
     }
 
-    public Map<List<String>, Double> getInsertionInfoMap() {
-        return insertionInfoMap;
-    }
-
-    public Map<List<String>, Double> getDeletionInfoMap() {
-        return deletionInfoMap;
-    }
-
-    public Map<List<String>, Double> getSubstitutionInfoMap() {
-        return substitutionInfoMap;
-    }
-
+    /**
+     * Returns correctLetters
+     *
+     * @return correctLetters
+     *
+     */
     public String getCorrectLetters() {
         return correctLetters;
     }
 
+    /**
+     * Returns wrongLetters
+     *
+     * @return wrongLetters
+     *
+     */
     public String getWrongLetters() {
         return wrongLetters;
     }

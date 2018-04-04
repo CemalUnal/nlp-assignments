@@ -17,6 +17,7 @@ public class Main {
             System.out.printf("Preprocessing started.%n%n");
 
             preprocessing.processDatasetLines(inputFile);
+            preprocessing.initializeWrongCorrectWordsMap();
 
             System.out.println("Preprocessing is done. Implementing viterbi...");
 

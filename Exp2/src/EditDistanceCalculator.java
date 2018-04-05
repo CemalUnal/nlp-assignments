@@ -7,7 +7,7 @@ public class EditDistanceCalculator {
     private static Map<List<String>, Double> deletionInfoMap = new HashMap<>();
     private static Map<List<String>, Double> substitutionInfoMap = new HashMap<>();
 
-    private static String typeOfOperation;
+    public static String typeOfOperation;
     private static String correctLetters;
     private static String wrongLetters;
 
@@ -32,21 +32,21 @@ public class EditDistanceCalculator {
             minEditDistanceIsOne = getMinEditDistance(datasetToken, word);
 
             if (minEditDistanceIsOne) {
-                switch (typeOfOperation) {
-                    case "insertion":
-                        addToInsertionInfoMap(correctLetters, wrongLetters);
-                        break;
-                    case "deletion":
-                        addToDeletionInfoMap(correctLetters, wrongLetters);
-                        break;
-                    case "substitution":
-                        addToSubstitutionInfoMap(correctLetters, wrongLetters);
-                        break;
+                if (typeOfOperation.equals("insertion")) {
+                    addToInsertionInfoMap(correctLetters, wrongLetters);
+
+                } else if (typeOfOperation.equals("deletion")) {
+                    addToDeletionInfoMap(correctLetters, wrongLetters);
+
+                } else if (typeOfOperation.equals("substitution")) {
+                    addToSubstitutionInfoMap(correctLetters, wrongLetters);
+
                 }
+                return true;
             }
         }
 
-        return minEditDistanceIsOne;
+        return false;
     }
 
     /**
@@ -65,20 +65,40 @@ public class EditDistanceCalculator {
         int lengthOfCorrectWord = correctWord.length();
         int lengthOfWrongWord = wrongWord.length();
 
-        // neither length of two words are not same nor differences between them is is not 1,
+        // length of two words are not same of differences between their length is not 1,
         // then do not need to calculate minimum edit distance
         if (!(Math.abs(lengthOfCorrectWord - lengthOfWrongWord) == 1 || lengthOfCorrectWord - lengthOfWrongWord == 0)) {
             return false;
         }
 
+        int difference = 0;
+        int j = 0;
+        boolean isErrorAtTheBeginning = false;
+
         if (lengthOfWrongWord > lengthOfCorrectWord) {
             typeOfOperation = "insertion";
             char previousChar = '#';
             for (int i = 0; i < lengthOfWrongWord; i++) {
-                if (i == lengthOfCorrectWord || correctWord.charAt(i) != wrongWord.charAt(i)) {
+                // if the difference between two words exceeds 1
+                if (difference > 1) {
+                    return false;
+                }
+
+                if (i == lengthOfCorrectWord) {
+                    if (!isErrorAtTheBeginning) {
+                        correctLetters = String.valueOf(previousChar);
+                        wrongLetters = correctLetters + String.valueOf(wrongWord.charAt(i));
+                    }
+                    return true;
+                }
+
+                if (correctWord.charAt(j) == wrongWord.charAt(i)) {
+                    j++;
+                } else {
+                    isErrorAtTheBeginning = true;
                     correctLetters = String.valueOf(previousChar);
                     wrongLetters = correctLetters + String.valueOf(wrongWord.charAt(i));
-                    return true;
+                    difference++;
                 }
                 previousChar = wrongWord.charAt(i);
             }
@@ -86,11 +106,28 @@ public class EditDistanceCalculator {
             typeOfOperation = "deletion";
             char previousChar = '#';
             for (int i = 0; i < lengthOfCorrectWord; i++) {
-                if (i == lengthOfWrongWord || wrongWord.charAt(i) != correctWord.charAt(i)) {
-                    correctLetters = String.valueOf(previousChar) + String.valueOf(correctWord.charAt(i));
-                    wrongLetters = String.valueOf(previousChar);
+                // if the difference between two words exceeds 1
+                if (difference > 1) {
+                    return false;
+                }
+
+                if (i == lengthOfWrongWord) {
+                    if (!isErrorAtTheBeginning) {
+                        correctLetters = String.valueOf(previousChar) + String.valueOf(correctWord.charAt(i));
+                        wrongLetters = String.valueOf(previousChar);
+                    }
                     return true;
                 }
+
+                if (correctWord.charAt(i) == wrongWord.charAt(j)) {
+                    j++;
+                } else {
+                    isErrorAtTheBeginning = true;
+                    correctLetters = String.valueOf(previousChar) + String.valueOf(correctWord.charAt(i));
+                    wrongLetters = String.valueOf(previousChar);
+                    difference++;
+                }
+
                 previousChar = wrongWord.charAt(i);
             }
         } else {
@@ -99,8 +136,12 @@ public class EditDistanceCalculator {
                 if (wrongWord.charAt(i) != correctWord.charAt(i)) {
                     correctLetters = String.valueOf(correctWord.charAt(i));
                     wrongLetters = String.valueOf(wrongWord.charAt(i));
-                    return true;
+                    difference++;
                 }
+            }
+
+            if (difference == 1) {
+                return true;
             }
         }
 

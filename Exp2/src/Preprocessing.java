@@ -173,7 +173,10 @@ public class Preprocessing {
 
         boolean minEditDistanceIsOne = editDistanceCalculator.minEditDistanceIsOne(key, unigramCountsMap);
 
-        if (minEditDistanceIsOne) {
+        if (minEditDistanceIsOne || value.equals("?")) {
+            if (value.equals("?")) {
+                value = key;
+            }
             // if the map contains the correct word, then update its wrong words
             if (map.containsKey(key)) {
                 // And we do not want to add the same

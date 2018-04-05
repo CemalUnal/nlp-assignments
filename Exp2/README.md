@@ -50,6 +50,8 @@ Main purposes of **Preprocessing** class are;
 
 - After all, it writes the wrong version of the sentence along with the viterbi version of this sentence to the output file. Also it writes the accuracy to this file.
 
+- By the way, I am not taking correct sentences into account. So they will not visible in the output file.
+
 #### ViterbiNode.java
 It represents a state in the Hidden Markov Model. Attributes of this class are;
 - **wordWithMaxProb** - The word that has the maximum probability (*This probability is coming from viterbi algorithm.*) In other words, it is the word that most likely to be correct one.
@@ -66,7 +68,7 @@ Main purpose of **FWriter** class is writing a message to a given output file. T
 This is the main class of the assignment. It calls the methods that reads and processes the given input file. And also it calls the method that implements viterbi algorithm.
 
 #### Accuracy
-Accuracy of my code is approximately 49.67 percent. This value can be more greater if use larger and more accurate datasets.
+Accuracy of my code is approximately **68.18 percent**. My code found the **correct guessed word count as 1772** and the **total wrong word count as 2599**. This value can be more greater if use larger and more accurate datasets.
 
 ## Shortcomings of My Code
 - Execution time is nearly 5 seconds. This execution time may be lower.

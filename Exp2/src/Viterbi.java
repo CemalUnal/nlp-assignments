@@ -97,7 +97,7 @@ public class Viterbi {
         }
 
         for (String errTag : errorTags) {
-            Pattern pattern = Pattern.compile(errTag);
+            Pattern pattern = Pattern.compile(Pattern.quote(errTag));
             Matcher matcher = pattern.matcher(line);
 
             while (matcher.find()) {
@@ -331,7 +331,10 @@ public class Viterbi {
         fileWriter.write(String.format("Accuracy is: %s percent.%n", (100.0 * correctGuessCount) / preprocessing.getTotalWrongWordCount()));
         fileWriter.closeFile();
 
-        System.out.println("Viterbi algorithm is implemented.");
+        System.out.printf("Viterbi algorithm is implemented.%n%n");
+
+        System.out.println("CorrectGuessCount: " + correctGuessCount);
+        System.out.println("TotalWrongWordCount: " + preprocessing.getTotalWrongWordCount());
 
         System.out.printf("%nAccuracy is: %s percent.%n", (100.0 * correctGuessCount) / preprocessing.getTotalWrongWordCount());
         System.out.printf("See the output file for corrected sentences.%n%n");

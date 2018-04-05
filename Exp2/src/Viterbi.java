@@ -41,7 +41,7 @@ public class Viterbi {
      *         inside of it
      */
     private String getPlainWord(String word) {
-        String punctuation = "!\"#$%&'()*+,-./:;<=>@[\\]^_`{|}~";
+        String punctuation = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
 
         if (word.length() == 0 ) {
             return "";

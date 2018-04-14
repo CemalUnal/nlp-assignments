@@ -10,6 +10,22 @@ public class UnorderedWord {
         this.position = position;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) return false;
+
+        if (!(obj instanceof UnorderedWord)) return false;
+
+        if (obj == this) return true;
+
+        return (this.getWord().equals(((UnorderedWord) obj).getWord()));
+    }
+
+    @Override
+    public int hashCode() {
+        return (word != null) ? (word.hashCode()) : 0;
+    }
+
     public String getWord() {
         return word;
     }

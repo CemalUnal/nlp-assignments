@@ -15,26 +15,36 @@ public class Main {
         String trainFile = args[1];
         String testFile = args[2];
         String resultsFile = args[3];
+        String inputFileType = "train";
 
         Preprocessing preprocessing = new Preprocessing();
-
-        // TODO: HER BIR SENSE IDYE KARSILIK LIST TUTMAK YERINE MAP TUTMAK GEREKEBILIR.
+        NaiveBayes naiveBayes = new NaiveBayes();
 
         try {
             preprocessing.readStopWords(stopWordsFile);
-            preprocessing.processDatasetLines(trainFile);
+            preprocessing.processInputLines(trainFile, inputFileType);
+            inputFileType = "test";
+            preprocessing.processInputLines(testFile, inputFileType);
 
-            Map<Integer, List<List<UnorderedWord>>> fOneFeatureVector = Preprocessing.getfOneFeatureVector();
-            System.out.println(fOneFeatureVector.size());
+            Map<Integer, Map<List<UnorderedWord>, Double>> fOneFeatureVectorTrain = Preprocessing.getfOneFeatureVectorTrainSet();
+            Map<String, Map<List<UnorderedWord>, Double>> fOneFeatureVectorTest = Preprocessing.getfOneFeatureVectorTestSet();
 
-//
-//            for (Map.Entry<Integer, List<List<UnorderedWord>>> entry : fOneFeatureVector.entrySet()) {
+//            System.out.println(fOneFeatureVectorTrain.size());
+//            System.out.println(fOneFeatureVectorTest.size());
+
+//            naiveBayes.getNaiveBayesProbability(fOneFeatureVectorTrain, fOneFeatureVectorTest);
+            naiveBayes.getNaiveBayesProbability();
+
+//            Map<Integer, Map<List<UnorderedWord>, Double>> fTwoFeatureVector = Preprocessing.getfTwoFeatureVectorTrainSet();
+
+//            for (Map.Entry<String, Map<List<UnorderedWord>, Double>> entry : fOneFeatureVector.entrySet()) {
 //                System.out.println(entry.getKey());
-//                for (List<UnorderedWord> item : entry.getValue()) {
-//                    System.out.println(entry.getValue());
+//                for (Map.Entry<List<UnorderedWord>, Double> item : entry.getValue().entrySet()) {
+//                    System.out.println(item);
 //
-//                    for (UnorderedWord unorderedWord : item) {
-//                        System.out.println(unorderedWord.getWord() + " --- " + unorderedWord.getPosition());
+////                    System.out.println(item.getValue());
+//                    for (UnorderedWord unorderedWord : item.getKey()) {
+//                        System.out.println(unorderedWord.getWord() + " --- " + unorderedWord.getPosition() + " --- " +unorderedWord.getTag());
 //                    }
 //                }
 //            }

@@ -7,10 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,10 +33,14 @@ public class Preprocessing {
     private String currentAmbiguousWord = "";
     private List<String> stopWords = new ArrayList<>();
 
-    private List<String> tempUnorderedWordTags = new ArrayList<>();
+    // is equal to N in the assignment sheet
+    private static double allInstancesInTrainingSet = 0.0;
 
-    private static Map<Integer, List<List<UnorderedWord>>> fOneFeatureVector = new HashMap<>();
-//    private static Map<String, List<String>> fTwoFeatureVector = new HashMap<>();
+    private static Map<Integer, Map<List<UnorderedWord>, Double>> fOneFeatureVectorTrainSet = new HashMap<>();
+    private static Map<Integer, Map<List<UnorderedWord>, Double>> fTwoFeatureVectorTrainSet = new HashMap<>();
+
+    private static Map<String, Map<List<UnorderedWord>, Double>> fOneFeatureVectorTestSet = new HashMap<>();
+    private static Map<String, Map<List<UnorderedWord>, Double>> fTwoFeatureVectorTestSet = new HashMap<>();
 
     public void readStopWords(String filePath) throws IOException {
         Path file = Paths.get(filePath);
@@ -59,7 +60,7 @@ public class Preprocessing {
     }
 
 
-    public void processDatasetLines(String filePath) throws IOException {
+    public void processInputLines(String filePath, String inputFileType) throws IOException {
         Path file = Paths.get(filePath);
         if (!Files.exists(file)) {
             throw new FileNotFoundException(filePath);
@@ -74,14 +75,18 @@ public class Preprocessing {
         boolean isContextBegan = false;
 
         List<String> tempUnorderedWords = new ArrayList<>();
+        List<String> tempUnorderedWordTags = new ArrayList<>();
+
         while ((line = reader.readLine()) != null) {
             if (!line.equals("") && !line.matches(corpusBeginRegex) && !line.matches(corpusEndRegex)) {
 //                if (line.matches(lexeltBeginRegex)) {
 ////                    ambiguousWord = getWordIdFromLexInstanceTag(line, lexeltBeginRegex);
 //                }
-//                if (line.matches(instanceBeginRegex)) {
-//                    currentWordId = getWordIdFromLexInstanceTag(line, instanceBeginRegex);
-//                }
+                if (line.matches(instanceBeginRegex)) {
+                    if (inputFileType.equals("train"))
+                        allInstancesInTrainingSet++;
+                    currentWordId = getWordIdFromInstanceTag(line, instanceBeginRegex);
+                }
                 if (line.matches(answerRegex)) {
                     currentSenseId = getSenseIdFromAnswerTag(line);
                 }
@@ -91,27 +96,132 @@ public class Preprocessing {
                 else if (line.matches(contextEndRegex)) {
                     isContextBegan = false;
 
-                    addToFeatureOneVector(currentAmbiguousWord, currentSenseId, tempUnorderedWords);
+                    if (inputFileType.equals("train"))
+                        addToTrainFeatureVector(currentAmbiguousWord, currentSenseId, tempUnorderedWords, tempUnorderedWordTags);
+                    else
+                        addToTestFeatureVector(currentAmbiguousWord, currentWordId, tempUnorderedWords, tempUnorderedWordTags);
                     tempUnorderedWords.clear();
+                    tempUnorderedWordTags.clear();
                 }
                 else if (isContextBegan) {
-                    tempUnorderedWords = getWordFromPTag(line, pTagRegex, tempUnorderedWords);
+                    tempUnorderedWords = getWordFromPTag(line, pTagRegex, tempUnorderedWords, tempUnorderedWordTags);
                 }
             }
         }
     }
 
-//    public static Map<Integer, List<List<UnorderedWord>>> fOneFeatureVector = new HashMap<>();
-    private void addToMap(int senseId, List<UnorderedWord> unorderedWordsObjects) {
-        List<List<UnorderedWord>> listOfFeatures;
-        if (fOneFeatureVector.containsKey(senseId)) {
-            listOfFeatures = fOneFeatureVector.get(senseId);
+    private Map<List<UnorderedWord>, Double> addToInnerMap(Map<List<UnorderedWord>, Double> map, List<UnorderedWord> unorderedWordsObjects) {
+        if (map.containsKey(unorderedWordsObjects)) {
+            double currentFrequency = map.get(unorderedWordsObjects);
+            currentFrequency = currentFrequency + 1.0;
+            map.put(
+                    // unmodifiable so key cannot change hash code
+                    Collections.unmodifiableList(unorderedWordsObjects), currentFrequency
+            );
         } else {
-            listOfFeatures = new ArrayList<>();
+            map.put(
+                    // unmodifiable so key cannot change hash code
+                    Collections.unmodifiableList(unorderedWordsObjects), 1.0
+            );
         }
 
-        listOfFeatures.add(unorderedWordsObjects);
-        fOneFeatureVector.put(senseId, listOfFeatures);
+        return map;
+    }
+
+    private void addToTestMap(String wordId, List<UnorderedWord> unorderedWordsObjects, Map<String, Map<List<UnorderedWord>, Double>> featureVector) {
+        Map<List<UnorderedWord>, Double> mapOfFeatures;
+
+        if (featureVector.containsKey(wordId)) {
+            mapOfFeatures = featureVector.get(wordId);
+        } else {
+            mapOfFeatures = new HashMap<>();
+        }
+
+        mapOfFeatures = addToInnerMap(mapOfFeatures, unorderedWordsObjects);
+
+        featureVector.put(wordId, mapOfFeatures);
+    }
+
+    private void addToTrainMap(int senseId, List<UnorderedWord> unorderedWordsObjects, Map<Integer, Map<List<UnorderedWord>, Double>> featureVector) {
+        Map<List<UnorderedWord>, Double> mapOfFeatures;
+        if (featureVector.containsKey(senseId)) {
+            mapOfFeatures = featureVector.get(senseId);
+        } else {
+            mapOfFeatures = new HashMap<>();
+        }
+
+        mapOfFeatures = addToInnerMap(mapOfFeatures, unorderedWordsObjects);
+
+        featureVector.put(senseId, mapOfFeatures);
+    }
+
+//    List<String> words, String ambiguousWord, List<String> wordTags,
+//    List<UnorderedWord> unorderedWordObjectsForfOne, List<UnorderedWord> unorderedWordObjectsForfTwo
+    private void addToTrainFeatureVector(String ambiguousWord, int senseId, List<String> words, List<String> wordTags) {
+        List<UnorderedWord> unorderedWordObjectsForfOneTrainSet = new ArrayList<>();
+        List<UnorderedWord> unorderedWordObjectsForfTwoTrainSet = new ArrayList<>();
+
+        createWordsInWindowSize(words, ambiguousWord, wordTags, unorderedWordObjectsForfOneTrainSet, unorderedWordObjectsForfTwoTrainSet);
+
+        addToTrainMap(senseId, unorderedWordObjectsForfOneTrainSet, fOneFeatureVectorTrainSet);
+        addToTrainMap(senseId, unorderedWordObjectsForfTwoTrainSet, fTwoFeatureVectorTrainSet);
+    }
+
+    private void addToTestFeatureVector(String ambiguousWord, String wordId, List<String> words, List<String> wordTags) {
+        List<UnorderedWord> unorderedWordObjectsForfOneTestSet = new ArrayList<>();
+        List<UnorderedWord> unorderedWordObjectsForfTwoTestSet = new ArrayList<>();
+
+        createWordsInWindowSize(words, ambiguousWord, wordTags, unorderedWordObjectsForfOneTestSet, unorderedWordObjectsForfTwoTestSet);
+
+        addToTestMap(wordId, unorderedWordObjectsForfOneTestSet, fOneFeatureVectorTestSet);
+        addToTestMap(wordId, unorderedWordObjectsForfTwoTestSet, fTwoFeatureVectorTestSet);
+
+//        for (int i = 1; i < 4; i++) {
+//            // prevent array index out of bounds exception
+//            if (indexOfAmbiguousWord - i > -1) {
+//                unorderedWord = words.get(indexOfAmbiguousWord - i);
+//                unorderedWordTag = wordTags.get(indexOfAmbiguousWord - i);
+//
+//                unorderedWordObjectsForfOneTestSet.add(new UnorderedWord(unorderedWord, null, 0 - i));
+//                unorderedWordObjectsForfTwoTestSet.add(new UnorderedWord(unorderedWord, unorderedWordTag, 0 - i));
+//            }
+//            // prevent array index out of bounds exception
+//            if (indexOfAmbiguousWord + i < words.size()) {
+//                unorderedWord = words.get(indexOfAmbiguousWord + i);
+//                unorderedWordTag = wordTags.get(indexOfAmbiguousWord + i);
+//
+//                unorderedWordObjectsForfOneTestSet.add(new UnorderedWord(unorderedWord, null, i));
+//                unorderedWordObjectsForfTwoTestSet.add(new UnorderedWord(unorderedWord, unorderedWordTag, i));
+//
+//            }
+//        }
+    }
+
+    private void createWordsInWindowSize(List<String> words, String ambiguousWord, List<String> wordTags,
+                       List<UnorderedWord> unorderedWordObjectsForfOne, List<UnorderedWord> unorderedWordObjectsForfTwo) {
+
+        int indexOfAmbiguousWord = words.indexOf(ambiguousWord);
+        String unorderedWord;
+        String unorderedWordTag;
+
+        for (int i = 1; i < 4; i++) {
+            // prevent array index out of bounds exception
+            if (indexOfAmbiguousWord - i > -1) {
+                unorderedWord = words.get(indexOfAmbiguousWord - i);
+                unorderedWordTag = wordTags.get(indexOfAmbiguousWord - i);
+
+                unorderedWordObjectsForfOne.add(new UnorderedWord(unorderedWord, null, 0 - i));
+                unorderedWordObjectsForfTwo.add(new UnorderedWord(unorderedWord, unorderedWordTag, 0 - i));
+            }
+            // prevent array index out of bounds exception
+            if (indexOfAmbiguousWord + i < words.size()) {
+                unorderedWord = words.get(indexOfAmbiguousWord + i);
+                unorderedWordTag = wordTags.get(indexOfAmbiguousWord + i);
+
+                unorderedWordObjectsForfOne.add(new UnorderedWord(unorderedWord, null, i));
+                unorderedWordObjectsForfTwo.add(new UnorderedWord(unorderedWord, unorderedWordTag, i));
+            }
+        }
     }
 
     private String getStemOfWord(String word) {
@@ -124,32 +234,6 @@ public class Preprocessing {
 
         return stemmer.toString();
     }
-//
-//    List<String> tempUnorderedWords = new ArrayList<>();
-//    List<UnorderedWord> unorderedWordObjects = new ArrayList<>();
-    private void addToFeatureOneVector(String ambiguousWord, int senseId, List<String> tempUnorderedWords) {
-        int indexOfAmbiguousWord = tempUnorderedWords.indexOf(ambiguousWord);
-        String unorderedWord;
-
-        List<UnorderedWord> unorderedWordObjects = new ArrayList<>();
-
-        for (int i = 1; i < 4; i++) {
-            // prevent array index out of bounds exception
-            if (indexOfAmbiguousWord - i > -1) {
-                unorderedWord = tempUnorderedWords.get(indexOfAmbiguousWord - i);
-
-                unorderedWordObjects.add(new UnorderedWord(unorderedWord, null, 0 - i));
-            }
-            // prevent array index out of bounds exception
-            if (indexOfAmbiguousWord + i < tempUnorderedWords.size()) {
-                unorderedWord = tempUnorderedWords.get(indexOfAmbiguousWord + i);
-
-                unorderedWordObjects.add(new UnorderedWord(unorderedWord, null, i));
-            }
-        }
-
-        addToMap(senseId, unorderedWordObjects);
-    }
 
     private boolean isStopWord(String word) {
         return stopWords.contains(word);
@@ -157,12 +241,12 @@ public class Preprocessing {
 
 //    "([a-zA-Z0-9!\"#$%&'()*+,\\-.:;?@\\[\\]^_`{|}~]+)(\\s)(<p=\")([a-zA-Z0-9!\"#$%&'()*+,\\-.:;?@\\[\\]^_`{|}~]+)(\"\\/>)"
 //    "(<head>)([A-Za-z]+)"
-    private List<String> getWordFromPTag(String line, String regex, List<String> tempUnorderedWords) {
+    private List<String> getWordFromPTag(String line, String regex, List<String> tempUnorderedWords, List<String> tempUnorderedWordTags) {
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(line);
 
-        String unorderedWord = null;
-        String tagOfWord = null;
+        String unorderedWord;
+        String tagOfWord;
 
         while (matcher.find()) {
             unorderedWord = matcher.group(1);
@@ -174,7 +258,7 @@ public class Preprocessing {
                 } else {
                     tempUnorderedWords.add(getStemOfWord(unorderedWord));
                 }
-//                tempUnorderedWordTags.add(tagOfWord);
+                tempUnorderedWordTags.add(tagOfWord);
             }
         }
 
@@ -198,23 +282,40 @@ public class Preprocessing {
         return senseId;
     }
 
-////    (<lexelt item=")([a-zA-Z]+)(-)([a-zA-Z]+)(">)
-////    "(<head>)([A-Za-z]+)(\\s)(<p=\")([A-Z]+)(\"/></head>)"
-//    private String getWordIdFromLexInstanceTag(String line, String regex) {
-//        Pattern pattern = Pattern.compile(regex);
-//        Matcher matcher = pattern.matcher(line);
-//
-//        String ambiguousWord = null;
-//
-//        while (matcher.find()) {
-//            ambiguousWord = matcher.group(2);
-////            System.out.println(ambiguousWord);
-//        }
-//
-//        return ambiguousWord;
-//    }
+//    (<lexelt item=")([a-zA-Z]+)(-)([a-zA-Z]+)(">)
+//    "(<head>)([A-Za-z]+)(\\s)(<p=\")([A-Z]+)(\"/></head>)"
+//    (<instance id=")([a-zA-Z]+-[a-zA-Z]+\.[0-9]+)(">)
+    private String getWordIdFromInstanceTag(String line, String regex) {
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(line);
 
-    public static Map<Integer, List<List<UnorderedWord>>> getfOneFeatureVector() {
-        return fOneFeatureVector;
+        String wordId = null;
+
+        while (matcher.find()) {
+            wordId = matcher.group(2);
+//            System.out.println(ambiguousWord);
+        }
+
+        return wordId;
+    }
+
+    public static Map<Integer, Map<List<UnorderedWord>, Double>> getfOneFeatureVectorTrainSet() {
+        return fOneFeatureVectorTrainSet;
+    }
+
+    public static Map<Integer, Map<List<UnorderedWord>, Double>> getfTwoFeatureVectorTrainSet() {
+        return fTwoFeatureVectorTrainSet;
+    }
+
+    public static Map<String, Map<List<UnorderedWord>, Double>> getfOneFeatureVectorTestSet() {
+        return fOneFeatureVectorTestSet;
+    }
+
+    public static Map<String, Map<List<UnorderedWord>, Double>> getfTwoFeatureVectorTestSet() {
+        return fTwoFeatureVectorTestSet;
+    }
+
+    public static double getAllInstancesInTrainingSet() {
+        return allInstancesInTrainingSet;
     }
 }

@@ -113,8 +113,8 @@ public class Preprocessing {
     }
 
     private Map<List<UnorderedWord>, Count> addToInnerMap(Map<List<UnorderedWord>, Count> map,
-                                                           List<UnorderedWord> unorderedWordsObjects,
-                                                           List<String> words) {
+                                                          List<UnorderedWord> unorderedWordsObjects,
+                                                          List<String> words) {
         if (map.containsKey(unorderedWordsObjects)) {
             Count currentCount = map.get(unorderedWordsObjects);
 
@@ -168,7 +168,7 @@ public class Preprocessing {
         featureVector.put(senseId, mapOfFeatures);
     }
 
-//    List<String> words, String ambiguousWord, List<String> wordTags,
+    //    List<String> words, String ambiguousWord, List<String> wordTags,
 //    List<UnorderedWord> unorderedWordObjectsForfOne, List<UnorderedWord> unorderedWordObjectsForfTwo
     private void addToTrainFeatureVector(String ambiguousWord, int senseId, List<String> words, List<String> wordTags) {
         List<UnorderedWord> unorderedWordObjectsForfOneTrainSet = new ArrayList<>();
@@ -295,7 +295,7 @@ public class Preprocessing {
         return senseId;
     }
 
-//    (<lexelt item=")([a-zA-Z]+)(-)([a-zA-Z]+)(">)
+    //    (<lexelt item=")([a-zA-Z]+)(-)([a-zA-Z]+)(">)
 //    "(<head>)([A-Za-z]+)(\\s)(<p=\")([A-Z]+)(\"/></head>)"
 //    (<instance id=")([a-zA-Z]+-[a-zA-Z]+\.[0-9]+)(">)
     private String getWordIdFromInstanceTag(String line, String regex) {

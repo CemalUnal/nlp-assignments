@@ -26,8 +26,8 @@ public class Main {
             inputFileType = "test";
             preprocessing.processInputLines(testFile, inputFileType);
 
-            Map<Integer, Map<List<UnorderedWord>, Double>> fOneFeatureVectorTrain = Preprocessing.getfOneFeatureVectorTrainSet();
-            Map<String, Map<List<UnorderedWord>, Double>> fOneFeatureVectorTest = Preprocessing.getfOneFeatureVectorTestSet();
+            Map<Integer, Map<List<UnorderedWord>, Count>> fOneFeatureVectorTrain = Preprocessing.getfOneFeatureVectorTrainSet();
+            Map<String, Map<List<UnorderedWord>, Count>> fOneFeatureVectorTest = Preprocessing.getfOneFeatureVectorTestSet();
 
 //            System.out.println(fOneFeatureVectorTrain.size());
 //            System.out.println(fOneFeatureVectorTest.size());

@@ -34,13 +34,14 @@ public class Preprocessing {
     private List<String> stopWords = new ArrayList<>();
 
     // is equal to N in the assignment sheet
-    private static double allInstancesInTrainingSet = 0.0;
+    private static double allLexeltsInTrainingSet = 0.0;
+    private static List<String> ambiguousWords = new ArrayList<>();
 
-    private static Map<Integer, Map<List<UnorderedWord>, Double>> fOneFeatureVectorTrainSet = new HashMap<>();
-    private static Map<Integer, Map<List<UnorderedWord>, Double>> fTwoFeatureVectorTrainSet = new HashMap<>();
+    private static Map<Integer, Map<List<UnorderedWord>, Count>> fOneFeatureVectorTrainSet = new HashMap<>();
+    private static Map<Integer, Map<List<UnorderedWord>, Count>> fTwoFeatureVectorTrainSet = new HashMap<>();
 
-    private static Map<String, Map<List<UnorderedWord>, Double>> fOneFeatureVectorTestSet = new HashMap<>();
-    private static Map<String, Map<List<UnorderedWord>, Double>> fTwoFeatureVectorTestSet = new HashMap<>();
+    private static Map<String, Map<List<UnorderedWord>, Count>> fOneFeatureVectorTestSet = new HashMap<>();
+    private static Map<String, Map<List<UnorderedWord>, Count>> fTwoFeatureVectorTestSet = new HashMap<>();
 
     public void readStopWords(String filePath) throws IOException {
         Path file = Paths.get(filePath);
@@ -69,7 +70,6 @@ public class Preprocessing {
         BufferedReader reader = new BufferedReader(new FileReader(filePath));
 
         String line;
-        String ambiguousWord = null;
         String currentWordId = null;
         int currentSenseId = 0;
         boolean isContextBegan = false;
@@ -79,12 +79,14 @@ public class Preprocessing {
 
         while ((line = reader.readLine()) != null) {
             if (!line.equals("") && !line.matches(corpusBeginRegex) && !line.matches(corpusEndRegex)) {
-//                if (line.matches(lexeltBeginRegex)) {
-////                    ambiguousWord = getWordIdFromLexInstanceTag(line, lexeltBeginRegex);
-//                }
-                if (line.matches(instanceBeginRegex)) {
+                if (line.matches(lexeltBeginRegex)) {
+                    if (inputFileType.equals("test"))
+                        ambiguousWords.add(getWordIdFromInstanceTag(line, lexeltBeginRegex));
+
                     if (inputFileType.equals("train"))
-                        allInstancesInTrainingSet++;
+                        allLexeltsInTrainingSet++;
+                }
+                if (line.matches(instanceBeginRegex)) {
                     currentWordId = getWordIdFromInstanceTag(line, instanceBeginRegex);
                 }
                 if (line.matches(answerRegex)) {
@@ -98,7 +100,7 @@ public class Preprocessing {
 
                     if (inputFileType.equals("train"))
                         addToTrainFeatureVector(currentAmbiguousWord, currentSenseId, tempUnorderedWords, tempUnorderedWordTags);
-                    else
+                    else if (inputFileType.equals("test"))
                         addToTestFeatureVector(currentAmbiguousWord, currentWordId, tempUnorderedWords, tempUnorderedWordTags);
                     tempUnorderedWords.clear();
                     tempUnorderedWordTags.clear();
@@ -110,26 +112,34 @@ public class Preprocessing {
         }
     }
 
-    private Map<List<UnorderedWord>, Double> addToInnerMap(Map<List<UnorderedWord>, Double> map, List<UnorderedWord> unorderedWordsObjects) {
+    private Map<List<UnorderedWord>, Count> addToInnerMap(Map<List<UnorderedWord>, Count> map,
+                                                           List<UnorderedWord> unorderedWordsObjects,
+                                                           List<String> words) {
         if (map.containsKey(unorderedWordsObjects)) {
-            double currentFrequency = map.get(unorderedWordsObjects);
-            currentFrequency = currentFrequency + 1.0;
-            map.put(
-                    // unmodifiable so key cannot change hash code
-                    Collections.unmodifiableList(unorderedWordsObjects), currentFrequency
-            );
+            Count currentCount = map.get(unorderedWordsObjects);
+
+            double currentFeatureFrequency = currentCount.getFeatureVectorCount();
+            currentFeatureFrequency = currentFeatureFrequency + 1.0;
+            currentCount.setFeatureVectorCount(currentFeatureFrequency);
+
+            currentCount.setContextWordsCount((double) words.size());
+
+            map.put(Collections.unmodifiableList(unorderedWordsObjects), currentCount);
         } else {
-            map.put(
-                    // unmodifiable so key cannot change hash code
-                    Collections.unmodifiableList(unorderedWordsObjects), 1.0
-            );
+            Count currentCount = new Count();
+            currentCount.setFeatureVectorCount(1);
+            currentCount.setContextWordsCount(words.size());
+
+            map.put(Collections.unmodifiableList(unorderedWordsObjects), currentCount);
         }
 
         return map;
     }
 
-    private void addToTestMap(String wordId, List<UnorderedWord> unorderedWordsObjects, Map<String, Map<List<UnorderedWord>, Double>> featureVector) {
-        Map<List<UnorderedWord>, Double> mapOfFeatures;
+    private void addToTestMap(String wordId, List<UnorderedWord> unorderedWordsObjects,
+                              Map<String, Map<List<UnorderedWord>, Count>> featureVector, List<String> words) {
+
+        Map<List<UnorderedWord>, Count> mapOfFeatures;
 
         if (featureVector.containsKey(wordId)) {
             mapOfFeatures = featureVector.get(wordId);
@@ -137,20 +147,23 @@ public class Preprocessing {
             mapOfFeatures = new HashMap<>();
         }
 
-        mapOfFeatures = addToInnerMap(mapOfFeatures, unorderedWordsObjects);
+        mapOfFeatures = addToInnerMap(mapOfFeatures, unorderedWordsObjects, words);
 
         featureVector.put(wordId, mapOfFeatures);
     }
 
-    private void addToTrainMap(int senseId, List<UnorderedWord> unorderedWordsObjects, Map<Integer, Map<List<UnorderedWord>, Double>> featureVector) {
-        Map<List<UnorderedWord>, Double> mapOfFeatures;
+    private void addToTrainMap(int senseId, List<UnorderedWord> unorderedWordsObjects,
+                               Map<Integer, Map<List<UnorderedWord>, Count>> featureVector, List<String> words) {
+
+        Map<List<UnorderedWord>, Count> mapOfFeatures;
+
         if (featureVector.containsKey(senseId)) {
             mapOfFeatures = featureVector.get(senseId);
         } else {
             mapOfFeatures = new HashMap<>();
         }
 
-        mapOfFeatures = addToInnerMap(mapOfFeatures, unorderedWordsObjects);
+        mapOfFeatures = addToInnerMap(mapOfFeatures, unorderedWordsObjects, words);
 
         featureVector.put(senseId, mapOfFeatures);
     }
@@ -163,8 +176,8 @@ public class Preprocessing {
 
         createWordsInWindowSize(words, ambiguousWord, wordTags, unorderedWordObjectsForfOneTrainSet, unorderedWordObjectsForfTwoTrainSet);
 
-        addToTrainMap(senseId, unorderedWordObjectsForfOneTrainSet, fOneFeatureVectorTrainSet);
-        addToTrainMap(senseId, unorderedWordObjectsForfTwoTrainSet, fTwoFeatureVectorTrainSet);
+        addToTrainMap(senseId, unorderedWordObjectsForfOneTrainSet, fOneFeatureVectorTrainSet, words);
+        addToTrainMap(senseId, unorderedWordObjectsForfTwoTrainSet, fTwoFeatureVectorTrainSet, words);
     }
 
     private void addToTestFeatureVector(String ambiguousWord, String wordId, List<String> words, List<String> wordTags) {
@@ -173,8 +186,8 @@ public class Preprocessing {
 
         createWordsInWindowSize(words, ambiguousWord, wordTags, unorderedWordObjectsForfOneTestSet, unorderedWordObjectsForfTwoTestSet);
 
-        addToTestMap(wordId, unorderedWordObjectsForfOneTestSet, fOneFeatureVectorTestSet);
-        addToTestMap(wordId, unorderedWordObjectsForfTwoTestSet, fTwoFeatureVectorTestSet);
+        addToTestMap(wordId, unorderedWordObjectsForfOneTestSet, fOneFeatureVectorTestSet, words);
+        addToTestMap(wordId, unorderedWordObjectsForfTwoTestSet, fTwoFeatureVectorTestSet, words);
 
 //        for (int i = 1; i < 4; i++) {
 //            // prevent array index out of bounds exception
@@ -198,7 +211,7 @@ public class Preprocessing {
     }
 
     private void createWordsInWindowSize(List<String> words, String ambiguousWord, List<String> wordTags,
-                       List<UnorderedWord> unorderedWordObjectsForfOne, List<UnorderedWord> unorderedWordObjectsForfTwo) {
+                                         List<UnorderedWord> unorderedWordObjectsForfOne, List<UnorderedWord> unorderedWordObjectsForfTwo) {
 
         int indexOfAmbiguousWord = words.indexOf(ambiguousWord);
         String unorderedWord;
@@ -239,7 +252,7 @@ public class Preprocessing {
         return stopWords.contains(word);
     }
 
-//    "([a-zA-Z0-9!\"#$%&'()*+,\\-.:;?@\\[\\]^_`{|}~]+)(\\s)(<p=\")([a-zA-Z0-9!\"#$%&'()*+,\\-.:;?@\\[\\]^_`{|}~]+)(\"\\/>)"
+    //    "([a-zA-Z0-9!\"#$%&'()*+,\\-.:;?@\\[\\]^_`{|}~]+)(\\s)(<p=\")([a-zA-Z0-9!\"#$%&'()*+,\\-.:;?@\\[\\]^_`{|}~]+)(\"\\/>)"
 //    "(<head>)([A-Za-z]+)"
     private List<String> getWordFromPTag(String line, String regex, List<String> tempUnorderedWords, List<String> tempUnorderedWordTags) {
         Pattern pattern = Pattern.compile(regex);
@@ -299,23 +312,27 @@ public class Preprocessing {
         return wordId;
     }
 
-    public static Map<Integer, Map<List<UnorderedWord>, Double>> getfOneFeatureVectorTrainSet() {
+    public static Map<Integer, Map<List<UnorderedWord>, Count>> getfOneFeatureVectorTrainSet() {
         return fOneFeatureVectorTrainSet;
     }
 
-    public static Map<Integer, Map<List<UnorderedWord>, Double>> getfTwoFeatureVectorTrainSet() {
+    public static Map<Integer, Map<List<UnorderedWord>, Count>> getfTwoFeatureVectorTrainSet() {
         return fTwoFeatureVectorTrainSet;
     }
 
-    public static Map<String, Map<List<UnorderedWord>, Double>> getfOneFeatureVectorTestSet() {
+    public static Map<String, Map<List<UnorderedWord>, Count>> getfOneFeatureVectorTestSet() {
         return fOneFeatureVectorTestSet;
     }
 
-    public static Map<String, Map<List<UnorderedWord>, Double>> getfTwoFeatureVectorTestSet() {
+    public static Map<String, Map<List<UnorderedWord>, Count>> getfTwoFeatureVectorTestSet() {
         return fTwoFeatureVectorTestSet;
     }
 
-    public static double getAllInstancesInTrainingSet() {
-        return allInstancesInTrainingSet;
+    public static double getAllLexeltsInTrainingSet() {
+        return allLexeltsInTrainingSet;
+    }
+
+    public static List<String> getAmbiguousWords() {
+        return ambiguousWords;
     }
 }

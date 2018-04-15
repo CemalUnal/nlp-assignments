@@ -155,7 +155,7 @@ public class Preprocessing {
         featureVector.put(senseId, mapOfFeatures);
     }
 
-//    List<String> words, String ambiguousWord, List<String> wordTags,
+    //    List<String> words, String ambiguousWord, List<String> wordTags,
 //    List<UnorderedWord> unorderedWordObjectsForfOne, List<UnorderedWord> unorderedWordObjectsForfTwo
     private void addToTrainFeatureVector(String ambiguousWord, int senseId, List<String> words, List<String> wordTags) {
         List<UnorderedWord> unorderedWordObjectsForfOneTrainSet = new ArrayList<>();
@@ -198,7 +198,7 @@ public class Preprocessing {
     }
 
     private void createWordsInWindowSize(List<String> words, String ambiguousWord, List<String> wordTags,
-                       List<UnorderedWord> unorderedWordObjectsForfOne, List<UnorderedWord> unorderedWordObjectsForfTwo) {
+                                         List<UnorderedWord> unorderedWordObjectsForfOne, List<UnorderedWord> unorderedWordObjectsForfTwo) {
 
         int indexOfAmbiguousWord = words.indexOf(ambiguousWord);
         String unorderedWord;
@@ -239,7 +239,7 @@ public class Preprocessing {
         return stopWords.contains(word);
     }
 
-//    "([a-zA-Z0-9!\"#$%&'()*+,\\-.:;?@\\[\\]^_`{|}~]+)(\\s)(<p=\")([a-zA-Z0-9!\"#$%&'()*+,\\-.:;?@\\[\\]^_`{|}~]+)(\"\\/>)"
+    //    "([a-zA-Z0-9!\"#$%&'()*+,\\-.:;?@\\[\\]^_`{|}~]+)(\\s)(<p=\")([a-zA-Z0-9!\"#$%&'()*+,\\-.:;?@\\[\\]^_`{|}~]+)(\"\\/>)"
 //    "(<head>)([A-Za-z]+)"
     private List<String> getWordFromPTag(String line, String regex, List<String> tempUnorderedWords, List<String> tempUnorderedWordTags) {
         Pattern pattern = Pattern.compile(regex);
@@ -282,7 +282,7 @@ public class Preprocessing {
         return senseId;
     }
 
-//    (<lexelt item=")([a-zA-Z]+)(-)([a-zA-Z]+)(">)
+    //    (<lexelt item=")([a-zA-Z]+)(-)([a-zA-Z]+)(">)
 //    "(<head>)([A-Za-z]+)(\\s)(<p=\")([A-Z]+)(\"/></head>)"
 //    (<instance id=")([a-zA-Z]+-[a-zA-Z]+\.[0-9]+)(">)
     private String getWordIdFromInstanceTag(String line, String regex) {

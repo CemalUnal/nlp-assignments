@@ -26,26 +26,20 @@ public class Main {
             inputFileType = "test";
             preprocessing.processInputLines(testFile, inputFileType);
 
-            Map<Integer, Map<List<UnorderedWord>, Count>> fOneFeatureVectorTrain = Preprocessing.getfOneFeatureVectorTrainSet();
-            Map<String, Map<List<UnorderedWord>, Count>> fOneFeatureVectorTest = Preprocessing.getfOneFeatureVectorTestSet();
+            Map<String, Map<String, Double>> featureVectorTrain = Preprocessing.getFeatureVectorTrainSet();
+            Map<String, Map<String, Double>> featureVectorTest = Preprocessing.getFeatureVectorTrainSet();
 
 //            System.out.println(fOneFeatureVectorTrain.size());
 //            System.out.println(fOneFeatureVectorTest.size());
 
-//            naiveBayes.getNaiveBayesProbability(fOneFeatureVectorTrain, fOneFeatureVectorTest);
             naiveBayes.getNaiveBayesProbability();
 
 //            Map<Integer, Map<List<UnorderedWord>, Double>> fTwoFeatureVector = Preprocessing.getfTwoFeatureVectorTrainSet();
 
-//            for (Map.Entry<String, Map<List<UnorderedWord>, Double>> entry : fOneFeatureVector.entrySet()) {
+//            for (Map.Entry<String, Map<String, Double>> entry : featureVectorTrain.entrySet()) {
 //                System.out.println(entry.getKey());
-//                for (Map.Entry<List<UnorderedWord>, Double> item : entry.getValue().entrySet()) {
-//                    System.out.println(item);
-//
-////                    System.out.println(item.getValue());
-//                    for (UnorderedWord unorderedWord : item.getKey()) {
-//                        System.out.println(unorderedWord.getWord() + " --- " + unorderedWord.getPosition() + " --- " +unorderedWord.getTag());
-//                    }
+//                for (Map.Entry<String, Double> item : entry.getValue().entrySet()) {
+//                    System.out.println(item.getKey() + " - " + item.getValue());
 //                }
 //            }
 

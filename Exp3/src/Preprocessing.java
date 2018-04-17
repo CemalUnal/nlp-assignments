@@ -35,7 +35,7 @@ public class Preprocessing {
     private static List<String> ambiguousWords = new ArrayList<>();
 
     private static Map<String, Map<String, Double>> featureVectorTrainSet = new HashMap<>();
-//    private static Map<String, Map<String, Double>> featureVectorTestSet = new HashMap<>();
+    //    private static Map<String, Map<String, Double>> featureVectorTestSet = new HashMap<>();
     private static Map<String, List<String>> featureVectorTestSet = new HashMap<>();
 
     private String outputFile;
@@ -212,7 +212,7 @@ public class Preprocessing {
         return stopWords.contains(word);
     }
 
-//    "([a-zA-Z0-9!\"#$%&'()*+,\\-.:;?@\\[\\]^_`{|}~]+)(\\s)(<p=\")([a-zA-Z0-9!\"#$%&'()*+,\\-.:;?@\\[\\]^_`{|}~]+)(\"\\/>)"
+    //    "([a-zA-Z0-9!\"#$%&'()*+,\\-.:;?@\\[\\]^_`{|}~]+)(\\s)(<p=\")([a-zA-Z0-9!\"#$%&'()*+,\\-.:;?@\\[\\]^_`{|}~]+)(\"\\/>)"
 //    "(<head>)([A-Za-z]+)"
     private List<String> getWordFromPTag(String line, String regex, List<String> tempUnorderedWords, List<String> tempUnorderedWordTags) {
         Pattern pattern = Pattern.compile(regex);
@@ -239,7 +239,7 @@ public class Preprocessing {
         return tempUnorderedWords;
     }
 
-//    "(<answer instance=\")([a-zA-Z]+-[a-zA-Z]+\\.[0-9]+)(\"\\s)(senseid=\")([0-9]+)(\"/>)"
+    //    "(<answer instance=\")([a-zA-Z]+-[a-zA-Z]+\\.[0-9]+)(\"\\s)(senseid=\")([0-9]+)(\"/>)"
     private String getSenseIdFromAnswerTag(String line) {
         Pattern pattern = Pattern.compile(answerRegex);
         Matcher matcher = pattern.matcher(line);
@@ -256,7 +256,7 @@ public class Preprocessing {
         return senseId;
     }
 
-//    (<lexelt item=")([a-zA-Z]+)(-)([a-zA-Z]+)(">)
+    //    (<lexelt item=")([a-zA-Z]+)(-)([a-zA-Z]+)(">)
 //    "(<head>)([A-Za-z]+)(\\s)(<p=\")([A-Z]+)(\"/></head>)"
 //    (<instance id=")([a-zA-Z]+-[a-zA-Z]+\.[0-9]+)(">)
     private String getWordIdFromInstanceTag(String line, String regex) {

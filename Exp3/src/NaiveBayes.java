@@ -4,7 +4,7 @@ import java.util.Map;
 
 public class NaiveBayes {
 
-//    public int getNaiveBayesProbability(String outputFile) throws IOException {
+    //    public int getNaiveBayesProbability(String outputFile) throws IOException {
     public static int getNaiveBayesProbability(String currentTestSetWordId, List<String> currentTestSetFeature, FWriter fileWriter) throws IOException {
 
         Map<String, Map<String, Double>> featureVectorTrainSet = Preprocessing.getFeatureVectorTrainSet();
@@ -21,44 +21,44 @@ public class NaiveBayes {
 //            String currentTestSetWord = testEntry.getKey();
 //            List<String> currentTestSetFeature = testEntry.getValue();
 
-            double maxProbability = 0.0;
-            String senseIdWithMaxProb = "";
+        double maxProbability = 0.0;
+        String senseIdWithMaxProb = "";
 
-            for (Map.Entry<String, Map<String, Double>> trainEntry : featureVectorTrainSet.entrySet()) {
+        for (Map.Entry<String, Map<String, Double>> trainEntry : featureVectorTrainSet.entrySet()) {
 
-                // C(si)
-                double numberOfContextWordsBelongingToSenseId = getNumberOfContextWordsWithSpecificSense(trainEntry.getValue());
-                double subProduct = 1.0;
-                for (String currentFeatureItem : currentTestSetFeature) {
+            // C(si)
+            double numberOfContextWordsBelongingToSenseId = getNumberOfContextWordsWithSpecificSense(trainEntry.getValue());
+            double subProduct = 1.0;
+            for (String currentFeatureItem : currentTestSetFeature) {
 
-                    // C(fj, si)
-                    double numberOfOccurrenceBelongingToSenseId;
+                // C(fj, si)
+                double numberOfOccurrenceBelongingToSenseId;
 
-                    if (trainEntry.getValue().get(currentFeatureItem) != null) {
-                        numberOfOccurrenceBelongingToSenseId = trainEntry.getValue().get(currentFeatureItem);
-                    } else {
-                        numberOfOccurrenceBelongingToSenseId = 1.0;
-                    }
-
-
-                    // P(fj |w = si) = C(fj, si)/C(si)
-                    double stepOneProbability = numberOfOccurrenceBelongingToSenseId / numberOfContextWordsBelongingToSenseId;
-
-                    subProduct = subProduct * stepOneProbability;
+                if (trainEntry.getValue().get(currentFeatureItem) != null) {
+                    numberOfOccurrenceBelongingToSenseId = trainEntry.getValue().get(currentFeatureItem);
+                } else {
+                    numberOfOccurrenceBelongingToSenseId = 1.0;
                 }
 
-                // P(si) = C(si)/N
-                double stepTwoProbability = numberOfContextWordsBelongingToSenseId / allLexeltsInTrainingSet;
 
-                double finalProductOfProbabilities = subProduct * stepTwoProbability;
+                // P(fj |w = si) = C(fj, si)/C(si)
+                double stepOneProbability = numberOfOccurrenceBelongingToSenseId / numberOfContextWordsBelongingToSenseId;
 
-                if (finalProductOfProbabilities > maxProbability) {
-                    maxProbability = finalProductOfProbabilities;
-                    senseIdWithMaxProb = trainEntry.getKey();
-                }
+                subProduct = subProduct * stepOneProbability;
             }
 
-            fileWriter.write(String.format("%s %s%n", currentTestSetWordId, senseIdWithMaxProb));
+            // P(si) = C(si)/N
+            double stepTwoProbability = numberOfContextWordsBelongingToSenseId / allLexeltsInTrainingSet;
+
+            double finalProductOfProbabilities = subProduct * stepTwoProbability;
+
+            if (finalProductOfProbabilities > maxProbability) {
+                maxProbability = finalProductOfProbabilities;
+                senseIdWithMaxProb = trainEntry.getKey();
+            }
+        }
+
+        fileWriter.write(String.format("%s %s%n", currentTestSetWordId, senseIdWithMaxProb));
         return 0;
     }
 

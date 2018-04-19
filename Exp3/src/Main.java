@@ -17,6 +17,8 @@ public class Main {
 
         Preprocessing preprocessing = new Preprocessing();
 
+        //TODO: !!!!!!!!!!!!!!!!!!!!!!!!! test set icin stem almak gerekebilir !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
         try {
             FWriter fWriter = preprocessing.openOutputFile(resultsFile);
 

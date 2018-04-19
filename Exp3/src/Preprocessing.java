@@ -13,10 +13,7 @@ public class Preprocessing {
     private static final String CORPUS_BEGIN_REGEX = "<corpus lang=\"[a-z]+\">";
     private static final String CORPUS_END_REGEX = "</corpus>";
 
-    private static final String LEXELT_BEGIN_REGEX = "(<lexelt item=\")([a-zA-Z]+)(-)([a-zA-Z]+)(\">)";
-
     private static final String INSTANCE_BEGIN_REGEX = "(<instance id=\")([a-zA-Z]+-[a-zA-Z]+\\.[0-9]+)(\">)";
-    private static final String INSTANCE_END_REGEX = "</instance>";
 
     private static final String ANSWER_REGEX = "(<answer instance=\")([a-zA-Z]+-[a-zA-Z]+\\.[0-9]+)(\"\\s)(senseid=\")([0-9]+)(\"/>)";
 
@@ -102,9 +99,6 @@ public class Preprocessing {
 
         while ((line = reader.readLine()) != null) {
             if (!line.equals("") && !line.matches(CORPUS_BEGIN_REGEX) && !line.matches(CORPUS_END_REGEX)) {
-//                if (line.matches(LEXELT_BEGIN_REGEX) && inputFileType.equals("train")) {
-//                    allLexeltsInTrainingSet++;
-//                }
                 if (line.matches(INSTANCE_BEGIN_REGEX)) {
                     currentWordId = getWordIdFromInstanceTag(line, INSTANCE_BEGIN_REGEX);
                 }
@@ -172,16 +166,6 @@ public class Preprocessing {
         }
 
         if (inputType.equalsIgnoreCase("train")) {
-//            Map<String, Map<String, Double>> tmp = new HashMap<>(featureVectorTrainSet);
-//            tmp.keySet().removeAll(tempFeatureVectorTrainSet.keySet());
-//            tempFeatureVectorTrainSet.putAll(tmp);
-
-//            featureVectorTrainSet.forEach(tempFeatureVectorTrainSet::putIfAbsent);
-
-//            currentAmbiguousWord = currentAmbiguousWord.replaceAll("<head>", "");
-
-//            System.out.println(currentWordId);
-
             String currentWord = getWordFromWordId(currentWordId);
             List<String> innerList = wordsWithSenseIds.get(currentWord);
 
@@ -196,7 +180,6 @@ public class Preprocessing {
 
         if (inputType.equalsIgnoreCase("test")) {
             try {
-//                System.out.println(currentWordId + " - " + currentFeatureList);
                 NaiveBayes.getNaiveBayesProbability(currentWordId, currentFeatureList, fWriter);
             } catch (IOException e) {
                 e.printStackTrace();

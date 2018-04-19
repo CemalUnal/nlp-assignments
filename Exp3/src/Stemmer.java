@@ -1,12 +1,12 @@
-class Stemmer
-{  private char[] b;
+class Stemmer  {
+    private char[] b;
     private int i,     /* offset into b */
             i_end, /* offset to end of stemmed word */
             j, k;
     private static final int INC = 50;
     /* unit of size whereby b is increased */
-    public Stemmer()
-    {  b = new char[INC];
+    public Stemmer() {
+        b = new char[INC];
         i = 0;
         i_end = 0;
     }
@@ -16,12 +16,12 @@ class Stemmer
      * adding characters, you can call stem(void) to stem the word.
      */
 
-    public void add(char ch)
-    {  if (i == b.length)
-    {  char[] new_b = new char[i+INC];
-        for (int c = 0; c < i; c++) new_b[c] = b[c];
-        b = new_b;
-    }
+    public void add(char ch) {
+        if (i == b.length)  {
+            char[] new_b = new char[i+INC];
+            for (int c = 0; c < i; c++) new_b[c] = b[c];
+                b = new_b;
+        }
         b[i++] = ch;
     }
 
@@ -31,13 +31,14 @@ class Stemmer
      * faster.
      */
 
-    public void add(char[] w, int wLen)
-    {  if (i+wLen >= b.length)
-    {  char[] new_b = new char[i+wLen+INC];
-        for (int c = 0; c < i; c++) new_b[c] = b[c];
-        b = new_b;
-    }
-        for (int c = 0; c < wLen; c++) b[i++] = w[c];
+    public void add(char[] w, int wLen) {
+        if (i+wLen >= b.length) {
+            char[] new_b = new char[i+wLen+INC];
+            for (int c = 0; c < i; c++) new_b[c] = b[c];
+            b = new_b;
+        }
+        for (int c = 0; c < wLen; c++)
+            b[i++] = w[c];
     }
 
     /**

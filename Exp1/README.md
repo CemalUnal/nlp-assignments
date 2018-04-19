@@ -5,7 +5,7 @@ _Subject: Language Models for E-mails_
 _Name and Surname: Cemal ÜNAL_  
 _Number: 21328538_
 
-- - - -
+- - - - -
 ## About the Structure
 
 I have wrote my code using **JAVA (JAVA 8)** programming language. And there are nine number of classes.

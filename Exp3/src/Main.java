@@ -9,7 +9,6 @@ public class Main {
             return;
         }
 
-        String stopWordsFile = System.getProperty("user.dir") + "/src/stopwords.txt";
         String trainFile = args[0];
         String testFile = args[1];
         String resultsFile = args[2];
@@ -17,12 +16,10 @@ public class Main {
 
         Preprocessing preprocessing = new Preprocessing();
 
-        //TODO: !!!!!!!!!!!!!!!!!!!!!!!!! test set icin stem almak gerekebilir !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
         try {
             FWriter fWriter = preprocessing.openOutputFile(resultsFile);
 
-            preprocessing.readStopWords(stopWordsFile);
+            preprocessing.readStopWords("stopwords.txt");
 
             preprocessing.processInputLines(trainFile, inputFileType, fWriter);
 

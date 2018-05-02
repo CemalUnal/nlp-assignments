@@ -21,6 +21,8 @@ public class NaiveBayes {
 
         String currentTestSetWord = preprocessing.getWordFromWordId(currentTestSetWordId);
 
+        currentTestSetWord = Preprocessing.getStemOfWord(currentTestSetWord);
+
         List<String> currentPossibleSenseIds = wordsWithSenseIds.get(currentTestSetWord);
 
         // numberOfAllWordsInTrainingSet is equal to N in the assignment sheet
@@ -29,6 +31,9 @@ public class NaiveBayes {
         double maxProbability = 0.0;
         String senseIdWithMaxProb = "";
 
+        // look for the sense ids only contains the ambiguous word.
+        // it is used to prevent assigning current sense id to a different
+        // ambiguous word rather than current ambiguous word.
         for (String senseId : currentPossibleSenseIds) {
             Map<String, Double> currentFeatureVector = featureVectorTrainSet.get(senseId);
 

@@ -56,12 +56,9 @@ public class Preprocessing {
      *
      */
     public void readStopWords(String filePath) throws IOException {
-        Path file = Paths.get(filePath);
-        if (!Files.exists(file)) {
-            throw new FileNotFoundException(filePath);
-        }
+        File file = new File(filePath);
 
-        BufferedReader reader = new BufferedReader(new FileReader(filePath));
+        BufferedReader reader = new BufferedReader(new FileReader(file));
 
         String line;
 
@@ -167,6 +164,8 @@ public class Preprocessing {
 
         if (inputType.equalsIgnoreCase("train")) {
             String currentWord = getWordFromWordId(currentWordId);
+            currentWord = getStemOfWord(currentWord);
+
             List<String> innerList = wordsWithSenseIds.get(currentWord);
 
             if (innerList == null) {
@@ -267,7 +266,7 @@ public class Preprocessing {
      * @return stem of the given word
      */
 
-    private String getStemOfWord(String word) {
+    public static String getStemOfWord(String word) {
         Stemmer stemmer = new Stemmer();
 
         for (int i = 0; i < word.length(); i++)
@@ -396,14 +395,24 @@ public class Preprocessing {
         return featureVectorTrainSet;
     }
 
+    /**
+     * Returns a map that has the each ambiguous word
+     * as a key and multiple senses that belong to this
+     * ambiguous word as values.
+     *
+     * Since we are doing supervised learning, it would be
+     * a good practice to implement it in this way.
+     *
+     * @return  wordsWithSenseIds
+     */
     public static Map<String, List<String>> getWordsWithSenseIds() {
         return wordsWithSenseIds;
     }
 
     /**
-     * Returns all the words that has 'lexelt' tag. (ex. <lexelt item="accident-n">)
+     * Returns the number of all words in training set.
      *
-     * @return  allLexeltsInTrainingSet
+     * @return  numberOfAllWordsInTrainingSet
      */
     public static double getNumberOfAllWordsInTrainingSet() {
         return numberOfAllWordsInTrainingSet;

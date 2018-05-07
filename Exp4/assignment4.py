@@ -12,98 +12,113 @@
 # summation of the vectors of the words in the sentence by filtering out the stop words.
 # ###################    BONUS SECTION    #########################
 
+# TODO: cumleleri olumlu ve olumsuz diye etiketle
+# TODO: birden fazla shuffle eylemek, sonucu olumlu yonde etkiliyor mu bir bak
+
 import sys
 import numpy as np
 from string import punctuation
-
-positives_file = sys.argv[1]
-negatives_file = sys.argv[2]
-vectors_file = sys.argv[3]
+import tensorflow as tf
 
 
 def strip_punctuation(s):
     return ''.join(c for c in s if c not in punctuation)
 
 
-def read_input_file():
+def read_sentences(sentences_file, l_sentences):
+    with open(sentences_file) as file:
+        for line in file:
+            line = line.strip()
+
+            # print(line)
+            l_sentences.append(line)
+
+
+def read_vectors_file(file):
     words_and_vectors = {}
 
     # lines = tuple(open(vectors_file, 'r'))
     # with open('output.txt', 'a') as output_file:
-    with open('output.txt', 'a'):
-        with open(vectors_file) as v_file:
-            for line in v_file:
-                line = line.strip()
+    # with open('output.txt', 'a'):
+    with open(file) as v_file:
+        for line in v_file:
+            line = line.strip()
 
-                split_result = line.split(':')
-                word = split_result[0]
-                temp_vectors = split_result[1]
+            split_result = line.split(':')
+            word = split_result[0]
+            temp_vectors = split_result[1]
 
-                all_vectors = temp_vectors.split(' ')
+            all_vectors = temp_vectors.split(' ')
 
-                all_vectors = [float(i) for i in all_vectors]
+            all_vectors = [float(f) for f in all_vectors]
 
-                words_and_vectors[word] = all_vectors
+            words_and_vectors[word] = all_vectors
 
-                # output_file.write(word + ' ')
-                # for vector in all_vectors:
-                #     output_file.write(vector + ' ')
+            # output_file.write(word + ' ')
+            # for vector in all_vectors:
+            #     output_file.write(vector + ' ')
 
     return words_and_vectors
 
+# bizdeki input -> 200 dimensional vector that is summation of the word vectors in the sentence
+# Output layer is composed of two outputs (we have positive and negative sentences).
+# Number of neurons in the first and second hidden layers are 100.
+# You can change the learning rate hyperparameter (learning rate=0.001).
 
-if __name__ == "__main__":
-    # print(strip_punctuation('cema.l'))
 
-    example_sentence = 'heyecanlısın yerinde duramıyorsun karşındaki gayet geniş sakin ve rahat, sev ben de özledim'
-    example_sentence2 = 'duymak kendini'
+def implement_multi_layer_perceptron(input_vector):
+    learning_rate = 0.001
+    training_epoch = 10
+    # batch_size = 100  # bizde bu olmayacak
+    number_of_neurons = 100
+    # number_of_hidden_layers = 2 # simdilik hep 2 gibi dusunecegim
+    # ama sonradan dinamik almak icin kodu degistirmek gerekecek
 
-    words_and_their_vectors = read_input_file()
-    # # for element in myMap:
-    # print('duymak: ')
-    # print(myMap.get('duymak'))
-    #
-    # print('kendini: ')
-    # print(myMap.get('kendini'))
-    #
-    # print('Istanbul: ')
-    # print(myMap.get('Istanbul'))
-    #
-    # print('İstanbul: ')
-    # value = myMap.get('İstanbul')
-    # print(value)
+    x = tf.placeholder(tf.float32, [None, 200])
 
-    sentence_elements = example_sentence.split(' ')
+    W1 = tf.Variable(tf.random_normal([200, 200], stddev=0.03), name='W1')
+    b1 = tf.Variable(tf.random_normal([200]), name='b1')
 
-    sum_of_vectors = []
-    for i in range(200):
-        sum_of_vectors.append(0.0)
+    W2 = tf.Variable(tf.random_normal([200, 200], stddev=0.03), name='W2')
+    b2 = tf.Variable(tf.random_normal([200]), name='b2')
 
-    for s_element in sentence_elements:
-        vector = words_and_their_vectors.get(s_element)
-        if vector is not None:
-            sum_of_vectors = np.array(sum_of_vectors) + np.array(vector)
+    W3 = tf.Variable(tf.random_normal([200, 10], stddev=0.03), name='W3')
+    b3 = tf.Variable(tf.random_normal([10]), name='b3')
 
-    # vector1 = np.array(myMap.get('duymak'))
-    # vector2 = np.array(myMap.get('kendini'))
-    #
-    # # vector1 = np.array([1, 2, 3])
-    # # vector2 = np.array([4, 5, 6])
-    #
-    # sum_vector = vector1 + vector2
-    print(sum_of_vectors)
+    hidden_out_one = tf.add(tf.matmul(x, W1), b1)
+    hidden_out_one = tf.nn.relu(hidden_out_one)
 
+    hidden_out_two = tf.add(tf.matmul(hidden_out_one, W2), b1)
+    hidden_out_two = tf.nn.relu(hidden_out_two)
+
+    output = tf.nn.softmax(tf.add(tf.matmul(hidden_out_two, W3), b3))
+
+    # is to make sure that we never get a case were we have a log(0) operation occurring during training
+    output_clipped = tf.clip_by_value(output, 1e-10, 0.9999999)
+    cross_entropy = -tf.reduce_mean(tf.reduce_sum(y * tf.log(output_clipped) + (1 - y) * tf.log(1 - output_clipped), axis=1))
+
+    # Gradient Descent optimizer
+    optimiser = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cross_entropy)
+
+    init_op = tf.global_variables_initializer()
+
+    correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(output, 1))
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+    with tf.Session() as sess:
+        # initialise the variables
+        sess.run(init_op)
+        for epoch in range(training_epoch):
+            avg_cost = 0
+            _, c = sess.run([optimiser, cross_entropy])
+        print("Epoch:", (epoch + 1), "cost =", "{:.3f}".format(avg_cost))
+    print(sess.run(accuracy, feed_dict={x: input_vector, y: mnist.test.labels}))
 
 # # import numpy as np
 # import tensorflow as tf
 # from tensorflow.examples.tutorials.mnist import input_data
 #
 # mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
-#
-# # bizdeki input -> 200 dimensional vector that is summation of the word vectors in the sentence
-# # Output layer is composed of two outputs (we have positive and negative sentences).
-# # Number of neurons in the first and second hidden layers are 100.
-# # You can change the learning rate hyperparameter (learning rate=0.001).
 #
 # # Python optimisation variables
 # learning_rate = 0.001
@@ -174,6 +189,67 @@ if __name__ == "__main__":
 #     print("\nTraining complete!")
 #     writer.add_graph(sess.graph)
 #     print(sess.run(accuracy, feed_dict={x: mnist.test.images, y: mnist.test.labels}))
+
+
+def split_list(shuf_sentences, t_percentage):
+    # cemal = int(round((t_percentage * len(shuf_sentences)) / 100))
+    cemal = int(round(t_percentage * len(shuf_sentences)))
+    return shuf_sentences[cemal:], shuf_sentences[:cemal]
+
+
+if __name__ == "__main__":
+    # print(strip_punctuation('cema.l'))
+
+    # example_sentence = 'heyecanlısın yerinde duramıyorsun karşındaki gayet geniş sakin ve rahat, sev ben de özledim'
+    # example_sentence2 = 'duymak kendini'
+
+    positives_file = sys.argv[1]
+    negatives_file = sys.argv[2]
+    vectors_file = sys.argv[3]
+    train_percentage = float(sys.argv[4])
+
+    all_sentences = []
+    read_sentences(positives_file, all_sentences)
+    read_sentences(negatives_file, all_sentences)
+
+    np.random.shuffle(all_sentences)
+
+    # for s in all_sentences:
+    #     print(s)
+
+    # print(split_list(all_sentences, int(train_percentage)))
+
+    # sl = slice(4, 95)
+
+    train_sentences = all_sentences[int(len(all_sentences) * .0): int(len(all_sentences) * (train_percentage/100))]
+    test_sentences = all_sentences[int(len(all_sentences) * (train_percentage / 100)): int(len(all_sentences) * 1)]
+
+    print(train_sentences)
+    print(test_sentences)
+
+    # words_and_their_vectors = read_vectors_file(vectors_file)
+    #
+    # sentence_elements = example_sentence.split(' ')
+    #
+    # sum_of_vectors = []
+    # for i in range(200):
+    #     sum_of_vectors.append(0.0)
+    #
+    # for s_element in sentence_elements:
+    #     vector = words_and_their_vectors.get(s_element)
+    #     if vector is not None:
+    #         sum_of_vectors = np.array(sum_of_vectors) + np.array(vector)
+    #
+    # # vector1 = np.array(myMap.get('duymak'))
+    # # vector2 = np.array(myMap.get('kendini'))
+    # #
+    # # # vector1 = np.array([1, 2, 3])
+    # # # vector2 = np.array([4, 5, 6])
+    # #
+    # # sum_vector = vector1 + vector2
+    # print(sum_of_vectors)
+    #
+    # implement_multi_layer_perceptron(sum_of_vectors)
 
 ####################################################################################################
 

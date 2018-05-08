@@ -5,11 +5,6 @@ _**Subject:** Word Sense Disambiguation using Naive Bayes_
 _**Name and Surname:** Cemal ÜNAL_  
 _**Number:** 21328538_
 
-- - - -
-
-## Introduction
-
-I wrote my code using **JAVA (JAVA 8)** programming language. And there are six number of classes.
 
 #### Feature Vector Structure
 

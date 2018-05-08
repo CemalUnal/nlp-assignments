@@ -6,10 +6,6 @@ _Subject: Spelling Correction with Hidden Markov Model Using Viterbi Algorithm_
 _Name and Surname: Cemal ÜNAL_  
 _Number: 21328538_
 
-- - - -
-## About the Structure
-
-I have wrote my code using **JAVA (JAVA 8)** programming language. And there are six number of classes.
 
 #### EditDistanceCalculator.java
 This class contains a method to calculate **min edit distance** between two words. This method also determines the type of operation to get wrong word from given correct word. For example correct word is **"watch"** and wrong word is **"wach"**. Then;

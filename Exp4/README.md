@@ -22,11 +22,11 @@ In this assignment I have used Python programming language (Python 3) along with
   - Train matrix with tags
     - It is a 111x2 matrix that contains tags for each train sentence. ([1,0]  for the positives and [0,1] for the negatives)
   - Test matrix
-    - It is a 38x200 matrix that contains vector sums for each word in each train sentence.
+    - It is a 38x200 matrix that contains vector sums for each word in each test sentence.
   - Test matrix with tags
     - It is a 38x2 matrix that contains tags for each test sentence. ([1,0]  for the positives and [0,1] for the negatives)
 - Call the function to implement multilayer perceptron.
-- The TensorFlow functions used in this implementor function are described unde the below title. 
+- The TensorFlow functions used in this implementor function are described unde the below title.
 
 ## TensorFlow Functions and Utilities That I Used in My Assignment
 
@@ -97,3 +97,11 @@ tf.global_variables_initializer returns an operator that initializes global vari
 A Session object encapsulates the environment in which Operation objects are executed, and Tensor objects are evaluated. With using **tf.Session()**, I have started the session.
 
 With usage of **session.run**, I easily executed previously declared operators.
+
+## Conclusion
+I am getting an accuracy value between 35% and 68% and I keep getting different values for the accuracy every time I execute the program.
+I am using;
+- learning rate as 0.001,
+- training epoch as 10,
+- number of neurons as 100,
+- number of hidden layers as 2

@@ -60,8 +60,8 @@ def implement_multi_layer_perceptron(train_mtrx, train_mtrx_w_tags, test_mtrx, t
             sess.run([optimiser, cross_entropy], feed_dict={training_data_placeholder: train_mtrx,
                                                             output_data_placeholder: train_mtrx_w_tags})
 
-        print(sess.run(accuracy, feed_dict={training_data_placeholder: test_mtrx,
-                                            output_data_placeholder: test_mtrx_w_tags}))
+        accuracy = sess.run(accuracy, feed_dict={training_data_placeholder: test_mtrx, output_data_placeholder: test_mtrx_w_tags})
+        print("Accuracy is ", accuracy * 100, " percent")
 
 
 def strip_punctuation(s):
@@ -186,11 +186,13 @@ if __name__ == "__main__":
     read_sentences(negatives_file, all_sentences, sentences_with_tags, "negatives")
 
     # Shuffle all the sentences
+    # I did it two times because I thought that it shuffled better in this way
+    np.random.shuffle(all_sentences)
     np.random.shuffle(all_sentences)
 
     # Use certain percentage of shuffled sentences as train set
     # Use the remaining sentences as test set
-    train_sentences = all_sentences[int(len(all_sentences) * .0): int(len(all_sentences) * (train_percentage/100))]
+    train_sentences = all_sentences[int(len(all_sentences) * .0): int(len(all_sentences) * (train_percentage / 100))]
     test_sentences = all_sentences[int(len(all_sentences) * (train_percentage / 100)): int(len(all_sentences) * 1)]
 
     # Get all words and their vectors as dictionary (map)
@@ -207,3 +209,4 @@ if __name__ == "__main__":
     create_train_and_test_matrices(test_matrix, test_matrix_with_tags, test_sentences, vector_size)
 
     implement_multi_layer_perceptron(train_matrix, train_matrix_with_tags, test_matrix, test_matrix_with_tags)
+

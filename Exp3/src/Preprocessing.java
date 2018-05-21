@@ -115,7 +115,7 @@ public class Preprocessing {
                     unorderedWordTags.clear();
                 }
                 else if (hasContextBegan) {
-                    unorderedWords = getWordFromPTag(line, P_TAG_REGEX, unorderedWords, unorderedWordTags);
+                    unorderedWords = getWordFromPTag(line, P_TAG_REGEX, inputFileType, unorderedWords, unorderedWordTags);
                 }
             }
         }
@@ -137,8 +137,8 @@ public class Preprocessing {
     private void processWordsInWindowSize(String ambiguousWord, String senseId, List<String> words, List<String> wordTags,
                                           String inputType, String currentWordId, FWriter fWriter) {
 
-        if (inputType.equalsIgnoreCase("train"))
-            numberOfAllWordsInTrainingSet ++;
+//        if (inputType.equalsIgnoreCase("train"))
+//            numberOfAllWordsInTrainingSet ++;
 
         int indexOfAmbiguousWord = words.indexOf(ambiguousWord);
         String unorderedWord;
@@ -300,7 +300,8 @@ public class Preprocessing {
      *
      * @return  list of unordered words in a context line
      */
-    private List<String> getWordFromPTag(String line, String regex, List<String> unorderedWords, List<String> unorderedWordTags) {
+    private List<String> getWordFromPTag(String line, String regex, String inputType, List<String> unorderedWords,
+                                         List<String> unorderedWordTags) {
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(line);
 
@@ -319,6 +320,9 @@ public class Preprocessing {
             }
             unorderedWordTags.add(tagOfWord);
         }
+
+        if (inputType.equalsIgnoreCase("train"))
+            numberOfAllWordsInTrainingSet += unorderedWords.size();
 
         return unorderedWords;
     }

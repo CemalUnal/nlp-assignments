@@ -69,5 +69,3 @@ Accuracy of my code is approximately **68.18 percent**. My code found the **corr
 ## Shortcomings of My Code
 - Execution time is nearly 5 seconds. This execution time may be lower.
 
-## IMPORTANT NOTE BEFORE EXECUTION
-!!! I have used JAVA 8 this assignment. It may not be compiled with older versions of JAVA. !!!

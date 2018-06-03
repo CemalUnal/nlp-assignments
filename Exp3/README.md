@@ -61,7 +61,4 @@ Main purpose of **FWriter** class is writing a message to a given output file. T
 ## Shortcomings of My Code
 - Execution time is nearly 18 seconds. This execution time may be lower.
 
-## IMPORTANT NOTE BEFORE EXECUTION
-!!! I have used JAVA 8 this assignment. It may not be compiled with older versions of JAVA. !!!
-
 **Also I put the 'stopWords.txt' file into the same folder with java files. Please be sure that this file is there before execution.**

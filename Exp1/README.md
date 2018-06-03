@@ -65,8 +65,5 @@ This is the main class of the assignment. It calls some methods to;
 ## Pros of My Code
 - I did not use any other specific libraries to read and parse **emails.csv** file.
 
-## IMPORTANT NOTE BEFORE EXECUTION
-!!! I have used JAVA 8 this assignment. It may not be compiled with older versions of JAVA. !!!
-
 Enron Email Dataset can be found [here.](https://www.cs.cmu.edu/~enron/enron_mail_20150507.tar.gz)
 You can run the code with [smaller version of the Enron Email Dataset.](https://github.com/CemalUnal/BBM497-Assignments/blob/master/Exp1/less-enron-email-dataset.csv)
